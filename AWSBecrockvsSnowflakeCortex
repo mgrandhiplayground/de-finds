@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bedrock vs Cortex — AI Data Engineering Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #7a7f96;
+    --accent: #5ee8b0;
+    --snow: #29b5e8;
+    --aws: #f5b84a;
+    --snow-dim: rgba(41,181,232,0.12);
+    --aws-dim: rgba(245,184,74,0.12);
+    --snow-border: rgba(41,181,232,0.3);
+    --aws-border: rgba(245,184,74,0.3);
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; line-height: 1.6; }
+
+  /* NAV */
+  nav {
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 0;
+  }
+  .nav-inner { max-width: 980px; margin: 0 auto; padding: 0 2rem; display: flex; align-items: center; gap: 16px; }
+  .nav-home { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: 0.08em; transition: color 0.15s; }
+  .nav-home:hover { color: var(--accent); }
+  .nav-sep { color: var(--border2); font-size: 14px; }
+  .nav-cur { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); letter-spacing: 0.08em; }
+
+  /* HEADER */
+  header { border-bottom: 1px solid var(--border); padding: 2.5rem 0 2rem; position: relative; overflow: hidden; }
+  .header-grid {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.25) 40%, transparent);
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 2rem; position: relative; }
+
+  .header-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(94,232,176,0.25);
+    padding: 5px 14px; border-radius: 99px; background: rgba(94,232,176,0.06); margin-bottom: 1.25rem;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 { font-family: 'DM Serif Display', serif; font-size: clamp(1.8rem, 4vw, 2.75rem); font-weight: 400; color: var(--text); line-height: 1.15; margin-bottom: 0.75rem; }
+  h1 .vs { font-style: italic; color: var(--muted); font-size: 0.7em; }
+  .header-sub { font-size: 14px; color: var(--muted); max-width: 560px; line-height: 1.6; margin-bottom: 1.5rem; }
+
+  /* SCORECARDS */
+  .scorecards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0; }
+  .scorecard {
+    border-radius: 12px; padding: 1rem 1.25rem;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .scorecard.snow-card { background: var(--snow-dim); border: 1px solid var(--snow-border); }
+  .scorecard.aws-card  { background: var(--aws-dim);  border: 1px solid var(--aws-border); }
+  .sc-logo { font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; padding: 5px 12px; border-radius: 99px; white-space: nowrap; }
+  .sc-logo.snow { background: rgba(41,181,232,0.2); color: var(--snow); }
+  .sc-logo.aws  { background: rgba(245,184,74,0.2);  color: var(--aws); }
+  .sc-wins { font-size: 22px; font-weight: 600; }
+  .sc-wins.snow { color: var(--snow); }
+  .sc-wins.aws  { color: var(--aws); }
+  .sc-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.06em; }
+
+  /* MAIN LAYOUT */
+  main { padding: 2rem 0 3rem; }
+
+  /* CONTROLS */
+  .controls { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .f-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em;
+    padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2); background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.16s;
+  }
+  .f-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .f-btn.active { background: var(--accent); color: #0d0f14; border-color: var(--accent); font-weight: 600; }
+
+  .view-toggle { margin-left: auto; display: flex; gap: 6px; }
+  .v-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    padding: 6px 14px; border-radius: 6px;
+    border: 1px solid var(--border2); background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .v-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 1.25rem; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .leg { display: flex; align-items: center; gap: 6px; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* TABLE VIEW */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  thead th {
+    padding: 11px 14px; text-align: left; font-weight: 500; font-size: 11px;
+    font-family: 'DM Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  thead th:first-child { width: 18%; }
+  thead th:nth-child(2) { width: 9%; text-align: center; }
+  thead th:nth-child(3), thead th:nth-child(4) { width: 36%; }
+  td { padding: 13px 14px; vertical-align: top; border-bottom: 1px solid var(--border); line-height: 1.55; color: var(--text); background: var(--surface); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  tr.hidden { display: none; }
+
+  td:first-child { color: var(--muted); font-size: 12px; font-weight: 500; }
+  .cat-pill { font-size: 10px; font-weight: 500; padding: 2px 9px; border-radius: 99px; display: inline-block; margin-bottom: 5px; letter-spacing: 0.05em; }
+  .cat-pipeline   { background: #132419; color: #5ee8b0; }
+  .cat-nlp        { background: #0e2030; color: #29b5e8; }
+  .cat-governance { background: #1e1228; color: #c47aff; }
+  .cat-integration{ background: #251e0f; color: #f5b84a; }
+  .cat-cost       { background: #132419; color: #97c459; }
+  .cat-agents     { background: #2a1212; color: #ff8a8a; }
+
+  .winner-cell { text-align: center; vertical-align: middle; }
+  .win-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 600; }
+  .win-snow { background: var(--snow-dim); color: var(--snow); border: 1px solid var(--snow-border); }
+  .win-aws  { background: var(--aws-dim);  color: var(--aws);  border: 1px solid var(--aws-border); }
+  .win-tie  { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+
+  .snow-strong { color: var(--snow); font-weight: 500; }
+  .aws-strong  { color: var(--aws); font-weight: 500; }
+
+  /* CARDS VIEW */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; }
+  .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .comp-card.hidden { display: none; }
+  .comp-card:hover { border-color: var(--border2); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; }
+  .card-dim { font-size: 14px; font-weight: 600; color: var(--text); }
+  .card-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .side { border-radius: 10px; padding: 10px 12px; }
+  .side.snow-side { background: var(--snow-dim); border: 1px solid var(--snow-border); }
+  .side.aws-side  { background: var(--aws-dim);  border: 1px solid var(--aws-border); }
+  .side-label { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .side.snow-side .side-label { color: var(--snow); }
+  .side.aws-side  .side-label { color: var(--aws); }
+  .side-text { font-size: 12px; color: var(--muted); line-height: 1.55; }
+
+  /* VERDICT */
+  .verdict-box {
+    margin-top: 2rem; border-radius: 14px; padding: 1.5rem;
+    border: 1px solid var(--border2); background: var(--surface);
+  }
+  .verdict-title { font-family: 'DM Serif Display', serif; font-size: 1.1rem; font-weight: 400; color: var(--text); margin-bottom: 0.75rem; }
+  .verdict-text { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 720px; }
+  .verdict-text strong { color: var(--text); font-weight: 600; }
+
+  .use-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1.25rem; }
+  .use-box { border-radius: 10px; padding: 1rem 1.1rem; }
+  .use-box.snow-box { background: var(--snow-dim); border: 1px solid var(--snow-border); }
+  .use-box.aws-box  { background: var(--aws-dim);  border: 1px solid var(--aws-border); }
+  .use-title { font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .use-box.snow-box .use-title { color: var(--snow); }
+  .use-box.aws-box  .use-title { color: var(--aws); }
+  .use-list { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .use-list li { font-size: 12px; color: var(--muted); line-height: 1.5; padding-left: 12px; position: relative; }
+  .use-list li::before { content: '→'; position: absolute; left: 0; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(122,127,150,0.4); letter-spacing: 0.06em; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .scorecards { grid-template-columns: 1fr; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .card-split { grid-template-columns: 1fr; }
+    .use-grid { grid-template-columns: 1fr; }
+    thead th:nth-child(2) { display: none; }
+    td.winner-cell { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-home" href="index.html">← AI × Data Engineering</a>
+    <span class="nav-sep">/</span>
+    <span class="nav-cur">Platform comparison</span>
+  </div>
+</nav>
+
+<header>
+  <div class="header-grid"></div>
+  <div class="container">
+    <div class="header-label"><span class="dot"></span> Updated May 2026</div>
+    <h1>Amazon Bedrock <span class="vs">vs</span><br>Snowflake Cortex</h1>
+    <p class="header-sub">A practical comparison for data engineering teams — covering pipeline generation, agentic workflows, governance, cost, and more. Framed for Snowflake-heavy enterprises.</p>
+    <div class="scorecards" id="scorecards"></div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <div class="controls">
+      <div id="filters" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <div class="view-toggle">
+        <button class="v-btn active" id="btn-table" onclick="setView('table')">Table</button>
+        <button class="v-btn" id="btn-cards" onclick="setView('cards')">Cards</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="leg"><span class="leg-dot" style="background:var(--snow)"></span> Snowflake Cortex advantage</span>
+      <span class="leg"><span class="leg-dot" style="background:var(--aws)"></span> Amazon Bedrock advantage</span>
+      <span class="leg"><span class="leg-dot" style="background:var(--muted)"></span> Comparable</span>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div id="table-view">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th style="text-align:center;">Edge</th>
+              <th>Amazon Bedrock</th>
+              <th>Snowflake Cortex</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CARDS VIEW -->
+    <div id="cards-view" style="display:none;">
+      <div class="cards-grid" id="cards-grid"></div>
+    </div>
+
+    <!-- VERDICT -->
+    <div class="verdict-box">
+      <div class="verdict-title">Bottom line for a Snowflake-heavy enterprise</div>
+      <p class="verdict-text">
+        Cortex wins on <strong>data-native simplicity</strong> — your pipelines, governance, RBAC, and LLM calls all live inside one perimeter with zero data movement. Bedrock wins on <strong>model breadth</strong>, multi-cloud flexibility, and agentic orchestration depth when workflows span multiple AWS services.
+        <br><br>
+        The pragmatic answer is often <strong>both</strong>: use Cortex for warehouse-bound AI tasks and Bedrock for complex cross-system orchestration or models Cortex doesn't yet carry.
+      </p>
+      <div class="use-grid">
+        <div class="use-box snow-box">
+          <div class="use-title">❄ Use Snowflake Cortex when…</div>
+          <ul class="use-list">
+            <li>Building dbt models or Snowflake pipelines with AI assistance</li>
+            <li>Enabling business users to query data in plain English</li>
+            <li>Running LLM calls governed by your existing RBAC + masking policies</li>
+            <li>Semantic search over Snowflake tables and documents</li>
+            <li>You want zero new infrastructure to manage</li>
+          </ul>
+        </div>
+        <div class="use-box aws-box">
+          <div class="use-title">▲ Use Amazon Bedrock when…</div>
+          <ul class="use-list">
+            <li>You need a model Cortex doesn't carry (GPT-4o, Titan, Stability AI)</li>
+            <li>Orchestrating agents across multiple AWS services (S3, Glue, Redshift)</li>
+            <li>Fine-tuning or customising a model with Nova Forge SDK</li>
+            <li>Cross-region inference resilience is a hard requirement</li>
+            <li>Your team already builds on OpenAI-compatible APIs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    Part of the <a href="index.html">AI × Data Engineering</a> curation — updated bi-weekly · May 2026
+  </div>
+</footer>
+
+<script>
+const ROWS = [
+  {
+    dim: "Pipeline generation", cat: "pipeline",
+    edge: "snow",
+    aws: "Bedrock Flows + AgentCore build multi-step pipelines across AWS services — S3, Glue, Redshift, EMR. Broad ecosystem but requires manual wiring.",
+    snow: "Cortex Code generates dbt models, Snowflake Tasks, Streams and Stored Procedures natively — with full awareness of your schema, RBAC, and lineage. Understands your environment without config."
+  },
+  {
+    dim: "NL-to-SQL / analyst queries", cat: "nlp",
+    edge: "snow",
+    aws: "Bedrock Knowledge Bases + agents can query databases, but requires wiring to Redshift or Athena. Not warehouse-native — setup overhead is significant.",
+    snow: "Cortex Analyst converts plain-English questions to governed SQL using your Semantic Views. Verified queries cache for cost savings. Business users query data without SQL knowledge."
+  },
+  {
+    dim: "Model choice", cat: "integration",
+    edge: "aws",
+    aws: "~100 foundation models: Claude, GPT-4o, Llama, Mistral, Titan, Cohere, Stability AI and more — all via a single API. Widest selection of any managed platform.",
+    snow: "Growing roster: Claude (Anthropic), Llama, Mistral, Snowflake Arctic. Smaller selection but deeply integrated with your data. Cortex Code itself runs on Claude."
+  },
+  {
+    dim: "Data governance & RBAC", cat: "governance",
+    edge: "snow",
+    aws: "IAM-based access is robust and auditable. Bedrock Guardrails for content policy enforcement. No semantic caching natively — same prompt billed each time.",
+    snow: "AI stays inside Snowflake's trust perimeter. RBAC, row/column masking, and data classification apply natively to all Cortex calls. Cortex agent discovery maps what data each agent can access."
+  },
+  {
+    dim: "Agentic workflows", cat: "agents",
+    edge: "aws",
+    aws: "AgentCore (GA March 2026) supports multi-agent collaboration, stateful MCP, supervisor/worker patterns, and OpenAI-compatible endpoints. Most mature agentic framework available.",
+    snow: "Cortex Agents (GA Nov 2025) orchestrate across Cortex Analyst + Search with a Plan → Execute → Reflect loop. Well-integrated but narrower scope than AgentCore."
+  },
+  {
+    dim: "Semantic search & RAG", cat: "nlp",
+    edge: "snow",
+    aws: "Bedrock Knowledge Bases support hybrid vector + keyword search with multiple backends. Flexible but requires setup and data movement outside your warehouse.",
+    snow: "Cortex Search provides semantic + keyword hybrid search natively over Snowflake tables and documents. No data movement — the index lives inside your account."
+  },
+  {
+    dim: "dbt + Airflow integration", cat: "pipeline",
+    edge: "snow",
+    aws: "Bedrock can be called from dbt macros or Airflow operators, but requires custom wiring with no native awareness of your dbt dependency graph.",
+    snow: "Cortex Code CLI generates and modifies dbt models and Airflow DAGs with full schema awareness. Native dbt and Airflow support added February 2026."
+  },
+  {
+    dim: "Cost model", cat: "cost",
+    edge: "tie",
+    aws: "Pay-per-token on-demand, or provisioned throughput for predictable spend. No semantic caching — repeated prompts billed each time. Good cost tooling in AWS Cost Explorer.",
+    snow: "Cortex billed in Snowflake credits — same bill you already manage. Watch Cortex Copilot background inference which accumulates silently across active Snowsight users."
+  },
+  {
+    dim: "Multi-cloud / portability", cat: "integration",
+    edge: "aws",
+    aws: "Bedrock runs on AWS with cross-region inference for resilience. OpenAI-compatible API via Project Mantle — migrate existing code with minimal changes.",
+    snow: "Cortex runs on Snowflake wherever your account lives (AWS, Azure, GCP). Portable to your cloud but locked to Snowflake as the runtime."
+  },
+  {
+    dim: "Data quality & classification", cat: "governance",
+    edge: "snow",
+    aws: "Bedrock Guardrails for output safety. No native warehouse-level data quality tooling — typically paired with Glue Data Quality or Great Expectations externally.",
+    snow: "Cortex COMPLETE classifies, tags, and scores data inline with SQL. Native PII detection, masking policy integration, and Horizon Catalog lineage built in."
+  },
+  {
+    dim: "Setup & time-to-value", cat: "integration",
+    edge: "snow",
+    aws: "Serverless — no GPU infra to manage. But multi-service wiring (Glue, S3, Redshift, Bedrock) requires IAM plumbing and architecture decisions upfront.",
+    snow: "Zero setup for Snowflake teams. Cortex Code, Analyst, Search, and Agents all available in Snowsight or CLI — no new infrastructure required."
+  },
+  {
+    dim: "Model fine-tuning", cat: "integration",
+    edge: "aws",
+    aws: "Nova Forge SDK (launched 2026) lets teams fine-tune Amazon Nova models for specific domains without ML engineering expertise. Several other models support fine-tuning.",
+    snow: "Limited fine-tuning options currently — Cortex focuses on prompt-based customisation and semantic model configuration rather than model fine-tuning."
+  }
+];
+
+const CATS = { all: "All", pipeline: "Pipeline", nlp: "NL & Search", agents: "Agents", governance: "Governance", integration: "Integration", cost: "Cost" };
+const WIN_SYM = { snow: "❄", aws: "▲", tie: "=" };
+const WIN_CLASS = { snow: "win-snow", aws: "win-aws", tie: "win-tie" };
+
+let activeCat = "all";
+let activeView = "table";
+
+function snowWins() { return ROWS.filter(r => r.edge === "snow").length; }
+function awsWins()  { return ROWS.filter(r => r.edge === "aws").length; }
+function ties()     { return ROWS.filter(r => r.edge === "tie").length; }
+
+function renderScores() {
+  document.getElementById("scorecards").innerHTML = `
+    <div class="scorecard snow-card">
+      <span class="sc-logo snow">❄ Snowflake Cortex</span>
+      <div>
+        <div class="sc-wins snow">${snowWins()} wins</div>
+        <div class="sc-label">out of ${ROWS.length} dimensions</div>
+      </div>
+    </div>
+    <div class="scorecard aws-card">
+      <span class="sc-logo aws">▲ Amazon Bedrock</span>
+      <div>
+        <div class="sc-wins aws">${awsWins()} wins</div>
+        <div class="sc-label">out of ${ROWS.length} dimensions · ${ties()} tied</div>
+      </div>
+    </div>`;
+}
+
+function catBadge(c) { return `<span class="cat-pill cat-${c}">${CATS[c]}</span>`; }
+
+function renderFilters() {
+  document.getElementById("filters").innerHTML = Object.entries(CATS).map(([k, v]) =>
+    `<button class="f-btn${activeCat === k ? " active" : ""}" onclick="setCat('${k}')">${v}</button>`
+  ).join("");
+}
+
+function filtered() {
+  return activeCat === "all" ? ROWS : ROWS.filter(r => r.cat === activeCat);
+}
+
+function renderTable() {
+  document.getElementById("tbody").innerHTML = filtered().map(r => `
+    <tr>
+      <td>${catBadge(r.cat)}<br>${r.dim}</td>
+      <td class="winner-cell"><span class="win-badge ${WIN_CLASS[r.edge]}">${WIN_SYM[r.edge]}</span></td>
+      <td>${r.edge === "aws" ? `<span class="aws-strong">` : ""}${r.aws}${r.edge === "aws" ? "</span>" : ""}</td>
+      <td>${r.edge === "snow" ? `<span class="snow-strong">` : ""}${r.snow}${r.edge === "snow" ? "</span>" : ""}</td>
+    </tr>`).join("");
+}
+
+function renderCards() {
+  document.getElementById("cards-grid").innerHTML = filtered().map(r => `
+    <div class="comp-card">
+      <div class="card-header">
+        <span class="card-dim">${r.dim}</span>
+        ${catBadge(r.cat)}
+      </div>
+      <div class="card-split">
+        <div class="side aws-side">
+          <div class="side-label">▲ Bedrock ${r.edge === "aws" ? "✓" : ""}</div>
+          <div class="side-text">${r.aws}</div>
+        </div>
+        <div class="side snow-side">
+          <div class="side-label">❄ Cortex ${r.edge === "snow" ? "✓" : ""}</div>
+          <div class="side-text">${r.snow}</div>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function render() {
+  if (activeView === "table") renderTable();
+  else renderCards();
+}
+
+function setCat(c) { activeCat = c; renderFilters(); render(); }
+
+function setView(v) {
+  activeView = v;
+  document.getElementById("table-view").style.display = v === "table" ? "block" : "none";
+  document.getElementById("cards-view").style.display = v === "cards" ? "block" : "none";
+  document.getElementById("btn-table").classList.toggle("active", v === "table");
+  document.getElementById("btn-cards").classList.toggle("active", v === "cards");
+  render();
+}
+
+renderScores();
+renderFilters();
+render();
+</script>
+</body>
+</html>
