@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI × Data Engineering — Things Worth Knowing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #7a7f96;
+    --accent: #5ee8b0;
+    --accent2: #4a9eff;
+    --tag-llm-bg: #1a2535; --tag-llm: #4a9eff;
+    --tag-pipeline-bg: #132419; --tag-pipeline: #5ee8b0;
+    --tag-tools-bg: #251e0f; --tag-tools: #f5b84a;
+    --tag-paper-bg: #1e1228; --tag-paper: #c47aff;
+    --tag-quality-bg: #2a1212; --tag-quality: #ff6b6b;
+    --tag-other-bg: #1a1a1a; --tag-other: #a0a0a0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 0 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3) 40%, transparent);
+  }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 0 2rem; position: relative; }
+
+  .header-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(94,232,176,0.25);
+    padding: 5px 14px; border-radius: 99px;
+    background: rgba(94,232,176,0.06);
+    margin-bottom: 1.25rem;
+  }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.15;
+    margin-bottom: 0.6rem;
+  }
+
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .header-sub {
+    font-size: 15px; color: var(--muted);
+    max-width: 480px; line-height: 1.6;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex; align-items: center; gap: 12px;
+    padding: 1.25rem 0; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.75rem;
+  }
+
+  .tag-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.08em;
+    padding: 6px 16px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer; transition: all 0.18s;
+  }
+
+  .tag-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .tag-btn.active { background: var(--accent); color: #0d0f14; border-color: var(--accent); font-weight: 600; }
+
+  .count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* CARDS */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+
+  .card-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 11px; border-radius: 99px; white-space: nowrap; flex-shrink: 0;
+  }
+
+  .tag-LLMs        { background: var(--tag-llm-bg);     color: var(--tag-llm); }
+  .tag-Pipeline    { background: var(--tag-pipeline-bg); color: var(--tag-pipeline); }
+  .tag-Tools       { background: var(--tag-tools-bg);    color: var(--tag-tools); }
+  .tag-Paper       { background: var(--tag-paper-bg);    color: var(--tag-paper); }
+  .tag-DataQuality { background: var(--tag-quality-bg);  color: var(--tag-quality); }
+  .tag-Other       { background: var(--tag-other-bg);    color: var(--tag-other); }
+
+  .card-title {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    line-height: 1.4;
+  }
+
+  .card-title a {
+    color: inherit; text-decoration: none;
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-size: 0% 1px; background-repeat: no-repeat;
+    background-position: 0 100%;
+    transition: background-size 0.25s;
+  }
+
+  .card-title a:hover { background-size: 100% 1px; }
+
+  .card-note { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  .card-footer { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+
+  .card-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: rgba(122,127,150,0.6);
+  }
+
+  .ext-icon { font-size: 10px; color: var(--muted); opacity: 0.5; }
+
+  /* ADD FORM */
+  .add-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .add-section h2 {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.05em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;
+  }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-full { grid-column: 1 / -1; }
+
+  input, select, textarea {
+    width: 100%; padding: 9px 14px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text);
+    font-family: 'Syne', sans-serif; font-size: 13px;
+    transition: border-color 0.18s;
+    -webkit-appearance: none;
+  }
+
+  input::placeholder, textarea::placeholder { color: rgba(122,127,150,0.5); }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select { cursor: pointer; }
+  select option { background: #1a1e28; }
+  textarea { resize: vertical; min-height: 64px; }
+
+  .add-btn {
+    margin-top: 12px;
+    padding: 10px 24px;
+    background: var(--accent); color: #0d0f14;
+    border: none; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.18s, transform 0.18s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .add-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .add-btn:active { transform: scale(0.97); }
+
+  /* BIWEEKLY DIGEST */
+  .digest-section { margin-bottom: 2rem; }
+
+  .digest-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .digest-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent2); background: rgba(74,158,255,0.08);
+    border: 1px solid rgba(74,158,255,0.2);
+    padding: 4px 12px; border-radius: 99px;
+  }
+
+  .digest-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem; font-weight: 400; color: var(--text);
+  }
+
+  .digest-card {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 12px 12px 0;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 10px;
+  }
+
+  .digest-card-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .digest-card-title a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(74,158,255,0.3); }
+  .digest-card-title a:hover { border-bottom-color: var(--accent2); }
+  .digest-card-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .digest-card-tag {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 6px;
+  }
+
+  .empty { text-align: center; padding: 3rem 0; color: var(--muted); font-size: 14px; grid-column: 1/-1; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 0;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: rgba(122,127,150,0.4);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-grid"></div>
+  <div class="container">
+    <div class="header-label"><span class="dot"></span> Live curation</div>
+    <h1>Things worth knowing<br>in <em>AI × Data Engineering</em></h1>
+    <p class="header-sub">A curated feed of tools, papers, pipelines &amp; happenings — updated bi-weekly.</p>
+  </div>
+</header>
+
+<main class="container" style="padding-top: 1.75rem;">
+
+  <!-- BIWEEKLY DIGEST -->
+  <section class="digest-section" id="digest-section">
+    <div class="digest-header">
+      <span class="digest-label">May 2026 digest</span>
+      <span class="digest-title">What happened this month</span>
+    </div>
+    <div id="digest-cards"></div>
+  </section>
+
+  <!-- FILTERS -->
+  <div class="controls">
+    <div id="tag-filters"></div>
+    <span class="count" id="count-label"></span>
+  </div>
+
+  <!-- CARDS GRID -->
+  <div class="grid" id="cards-grid"></div>
+
+  <!-- ADD FORM -->
+  <div class="add-section">
+    <h2>+ Add a find</h2>
+    <div class="form-grid">
+      <input class="form-full" type="text" id="in-title" placeholder="Title or headline" />
+      <input class="form-full" type="url" id="in-url" placeholder="https://..." />
+      <textarea class="form-full" id="in-note" placeholder="Why is this interesting?"></textarea>
+      <select id="in-tag">
+        <option value="LLMs">LLMs</option>
+        <option value="Pipeline">Pipeline</option>
+        <option value="Tools">Tools</option>
+        <option value="Paper">Paper</option>
+        <option value="DataQuality">Data Quality</option>
+        <option value="Other">Other</option>
+      </select>
+      <div style="display:flex;align-items:center;">
+        <button class="add-btn" onclick="addItem()">+ Add item</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="container">AI × Data Engineering curation — updated bi-weekly</div>
+</footer>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+// TO ADD ITEMS: add objects to this array and push to GitHub.
+// Fields: title, url (optional), note (optional), tag, date
+
+const ITEMS = [
+  {
+    id: 1,
+    title: "BigQuery Data Engineering Agent hits GA",
+    url: "https://cloud.google.com/blog/products/data-analytics/whats-new-with-google-data-cloud",
+    note: "Google's BigQuery Data Engineering Agent — which builds, modifies, and troubleshoots pipelines from natural language prompts — moved from Preview to Generally Available. Big shift for teams not wanting to hand-write DAGs.",
+    tag: "Pipeline",
+    date: "May 2026"
+  },
+  {
+    id: 2,
+    title: "Apache Airflow 3.1 GA: LLM operators + agentic troubleshooting",
+    url: "https://www.astronomer.io/blog/state-of-airflow-2026/",
+    note: "Airflow 3.1 ships with Common AI Provider (20+ LLM integrations), Human-in-the-Loop primitives for agent workflows, a managed MCP Server, and declarative YAML pipelines. dbt remains the #1 paired tool at 44% adoption.",
+    tag: "Pipeline",
+    date: "May 2026"
+  },
+  {
+    id: 3,
+    title: "Google Cloud Next: six new BigQuery AI agents for data engineering",
+    url: "https://thenextweb.com/news/google-cloud-next-ai-agents-agentic-era",
+    note: "Google announced a data engineering agent that auto-creates pipelines from natural language, plus a code interpreter that turns queries into executable Python with visualisations. Also: MCP support across AlloyDB, Spanner, Cloud SQL, Bigtable, and Firestore.",
+    tag: "Tools",
+    date: "May 2026"
+  },
+  {
+    id: 4,
+    title: "Google reintroduces Data Studio for the AI era",
+    url: "https://cloud.google.com/blog/products/data-analytics/whats-new-with-google-data-cloud",
+    note: "Data Studio is back — now hosting BigQuery conversational agents and data apps built in Colab notebooks. Expands way beyond its original dashboards-and-reports role.",
+    tag: "Tools",
+    date: "May 2026"
+  },
+  {
+    id: 5,
+    title: "Snowflake Cortex Code CLI adds dbt and Airflow support",
+    url: "https://thenewstack.io/snowflake-cortex-code-dbt-airflow/",
+    note: "Snowflake's AI coding agent now works outside its own ecosystem — it can generate and modify dbt models and Airflow DAGs. First time Cortex Code touched open-source frameworks.",
+    tag: "Tools",
+    date: "May 2026"
+  },
+  {
+    id: 6,
+    title: "Oracle + Google Cloud: Gemini Enterprise meets Oracle AI Database",
+    url: "https://blogs.oracle.com/cloud-infrastructure/google-cloud-next-2026",
+    note: "Partnership announced at Cloud Next brings Gemini Enterprise directly to Oracle's data, skipping complex replication pipelines. 97% of Fortune 100 run Oracle — this is a big distribution play for Google's AI stack.",
+    tag: "LLMs",
+    date: "May 2026"
+  },
+  {
+    id: 7,
+    title: "Four Chinese labs drop open-weight coding models in 12 days",
+    url: "https://press.airstreet.com/p/state-of-ai-may-2026",
+    note: "GLM-5.1, MiniMax M2.7, Kimi K2.6, and DeepSeek V4 all landed at similar capability to Western frontier models for agentic engineering — at less than a third of the inference cost. Signals a new cost floor for LLM-powered pipelines.",
+    tag: "LLMs",
+    date: "May 2026"
+  },
+  {
+    id: 8,
+    title: "BigQuery AI functions: AI.IF, AI.SCORE, AI.CLASSIFY now in Preview",
+    url: "https://docs.cloud.google.com/bigquery/docs/release-notes",
+    note: "New managed AI SQL functions let you filter, rank, and classify data using natural language — no Python, no external API calls. AI.IF filters joins by a natural-language condition; AI.CLASSIFY buckets text into user-defined categories.",
+    tag: "DataQuality",
+    date: "May 2026"
+  }
+];
+
+// ─── DIGEST ──────────────────────────────────────────────────────────────────
+const DIGEST = [
+  {
+    tag: "Big Platform Move",
+    title: "Google Cloud goes all-in on agentic data engineering",
+    url: "https://thenextweb.com/news/google-cloud-next-ai-agents-agentic-era",
+    body: "Cloud Next was the centrepiece of May. Google shipped a BigQuery Data Engineering Agent (now GA), six new AI agents for pipeline creation, revived Data Studio as an AI app host, and rolled out MCP support across its full database portfolio. The overarching theme: every part of the data stack gets an LLM interface."
+  },
+  {
+    tag: "Tooling",
+    title: "Airflow 3.1 lands — orchestration meets agents",
+    url: "https://www.astronomer.io/blog/state-of-airflow-2026/",
+    body: "The biggest Airflow release in years brings native LLM operators, a managed MCP Server, and Human-in-the-Loop task primitives. Combined with the dbt+Airflow combo dominating production stacks (44% adoption), this cements the Airflow+dbt+AI pattern as the de facto modern pipeline architecture."
+  },
+  {
+    tag: "Cost Shift",
+    title: "Open-weight models reset the cost floor for AI pipelines",
+    url: "https://press.airstreet.com/p/state-of-ai-may-2026",
+    body: "Four Chinese labs released capable open-weight coding models within 12 days, each costing less than a third of Western frontier equivalents at inference time. For data engineering teams embedding LLMs in pipelines, this significantly changes the build-vs-buy calculus."
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let items = [...ITEMS];
+let activeTag = 'All';
+let nextId = 100;
+
+const TAGS = ['All', 'LLMs', 'Pipeline', 'Tools', 'Paper', 'DataQuality', 'Other'];
+const TAG_LABELS = { DataQuality: 'Data Quality' };
+
+function tagLabel(t) { return TAG_LABELS[t] || t; }
+function tagClass(t) { return 'tag-' + t.replace(/\s+/g, ''); }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderDigest() {
+  const el = document.getElementById('digest-cards');
+  el.innerHTML = DIGEST.map(d => `
+    <div class="digest-card">
+      <div class="digest-card-tag">${d.tag}</div>
+      <div class="digest-card-title">${d.url ? `<a href="${d.url}" target="_blank" rel="noopener">${d.title}</a>` : d.title}</div>
+      <div class="digest-card-body">${d.body}</div>
+    </div>
+  `).join('');
+}
+
+function renderFilters() {
+  const el = document.getElementById('tag-filters');
+  el.style.display = 'flex';
+  el.style.gap = '8px';
+  el.style.flexWrap = 'wrap';
+  el.innerHTML = TAGS.map(t =>
+    `<button class="tag-btn${t === activeTag ? ' active' : ''}" onclick="filterBy('${t}')">${tagLabel(t)}</button>`
+  ).join('');
+}
+
+function renderCards() {
+  const filtered = activeTag === 'All' ? items : items.filter(i => i.tag === activeTag);
+  document.getElementById('count-label').textContent = filtered.length + ' item' + (filtered.length !== 1 ? 's' : '');
+  const grid = document.getElementById('cards-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">No items in this category yet.</div>';
+    return;
+  }
+  grid.innerHTML = [...filtered].reverse().map(item => `
+    <div class="card">
+      <div class="card-top">
+        <div class="card-title">
+          ${item.url
+            ? `<a href="${item.url}" target="_blank" rel="noopener">${item.title} <span class="ext-icon">↗</span></a>`
+            : item.title}
+        </div>
+        <span class="card-tag ${tagClass(item.tag)}">${tagLabel(item.tag)}</span>
+      </div>
+      ${item.note ? `<div class="card-note">${item.note}</div>` : ''}
+      <div class="card-footer">
+        <span class="card-date">${item.date}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterBy(tag) {
+  activeTag = tag;
+  renderFilters();
+  renderCards();
+}
+
+function addItem() {
+  const title = document.getElementById('in-title').value.trim();
+  const url   = document.getElementById('in-url').value.trim();
+  const note  = document.getElementById('in-note').value.trim();
+  const tag   = document.getElementById('in-tag').value;
+  if (!title) { document.getElementById('in-title').focus(); return; }
+  const now = new Date();
+  const date = now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  items.push({ id: nextId++, title, url, note, tag, date });
+  document.getElementById('in-title').value = '';
+  document.getElementById('in-url').value = '';
+  document.getElementById('in-note').value = '';
+  renderCards();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderDigest();
+renderFilters();
+renderCards();
+</script>
+</body>
+</html>
