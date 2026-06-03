@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Broadridge — The Hidden Infrastructure of ETF Markets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f7f6f2; --surface:#ffffff; --border:#e2e0d8; --text:#1a1917; --muted:#6b6963;
+      --accent:#1a5c3a; --accent-light:#e6f2ec; --blue:#1a3f6b; --blue-light:#e6eef7;
+      --amber:#7a4a0a; --amber-light:#fdf3e3; --purple:#3d2d8a; --purple-light:#efedfd;
+      --coral:#8a2a15; --coral-light:#fceee9; --teal:#085041; --teal-light:#e1f5ee;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem 4rem; }
+    .page { max-width:860px; margin:0 auto; }
+
+    /* breadcrumb */
+    .breadcrumb { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:1.5rem; flex-wrap:wrap; }
+    .breadcrumb a { color:var(--accent); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+    .breadcrumb span { opacity:.4; }
+
+    /* header */
+    header { margin-bottom:2.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
+    .eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
+    h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:600; line-height:1.2; margin-bottom:.75rem; }
+    .subtitle { font-size:1rem; color:var(--muted); line-height:1.6; max-width:640px; }
+
+    /* tabs */
+    .tab-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .tab-btn { padding:7px 16px; font-family:var(--font); font-size:13px; font-weight:500; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; transition:all .18s ease; }
+    .tab-btn:hover { background:var(--bg); color:var(--text); }
+    .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* panels */
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .panel-header { margin-bottom:1.25rem; }
+    .panel-title { font-size:1.15rem; font-weight:600; margin-bottom:4px; }
+    .panel-desc { font-size:.875rem; color:var(--muted); line-height:1.65; }
+
+    /* diagram */
+    .diagram-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem 1rem; margin-bottom:1rem; overflow-x:auto; }
+    .diagram-wrap svg { width:100%; display:block; }
+
+    /* callouts */
+    .callout       { background:var(--accent-light); border-left:3px solid var(--accent); border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:.85rem; color:#1a3d2a; line-height:1.65; margin-bottom:1rem; }
+    .callout-amber { background:var(--amber-light);  border-left:3px solid var(--amber);  border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:.85rem; color:var(--amber); line-height:1.65; margin-bottom:1rem; }
+    .callout-blue  { background:var(--blue-light);   border-left:3px solid var(--blue);   border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:.85rem; color:var(--blue);  line-height:1.65; margin-bottom:1rem; }
+    .callout-purple{ background:var(--purple-light); border-left:3px solid var(--purple); border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:.85rem; color:var(--purple);line-height:1.65; margin-bottom:1rem; }
+
+    /* stat grid */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:10px; margin-bottom:1.25rem; }
+    .stat-card { background:var(--bg); border-radius:var(--radius); padding:14px 16px; }
+    .stat-label { font-size:11px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+    .stat-value { font-size:1.35rem; font-weight:600; color:var(--text); line-height:1.2; }
+    .stat-sub   { font-size:11px; color:var(--muted); margin-top:3px; }
+
+    /* role cards */
+    .role-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-bottom:1.25rem; }
+    .role-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+    .role-num  { font-size:11px; font-family:var(--mono); color:var(--muted); margin-bottom:4px; }
+    .role-name { font-size:14px; font-weight:600; margin-bottom:6px; }
+    .role-body { font-size:13px; color:var(--muted); line-height:1.6; }
+
+    /* comparison table */
+    .cmp-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .cmp-table th { text-align:left; font-weight:500; font-size:11px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:.06em; padding:0 12px 8px; border-bottom:1px solid var(--border); }
+    .cmp-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.55; }
+    .cmp-table tr:last-child td { border-bottom:none; }
+    .cmp-table tr:hover td { background:var(--bg); }
+    .pill { display:inline-block; font-size:10px; font-family:var(--mono); padding:2px 7px; border-radius:4px; font-weight:500; }
+    .pill-blue   { background:var(--blue-light);   color:var(--blue); }
+    .pill-green  { background:var(--teal-light);   color:var(--teal); }
+    .pill-amber  { background:var(--amber-light);  color:var(--amber); }
+    .pill-purple { background:var(--purple-light); color:var(--purple); }
+
+    /* footer */
+    footer { margin-top:3rem; padding-top:1.5rem; border-bottom:1px solid var(--border); border-top:1px solid var(--border); font-size:12px; color:var(--muted); font-family:var(--mono); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; padding-bottom:1rem; }
+    footer a { color:var(--accent); text-decoration:none; }
+    footer a:hover { text-decoration:underline; }
+    @media(max-width:520px){ .tab-btn{ font-size:12px; padding:6px 12px; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="breadcrumb">
+    <a href="etf-explainer.html">Part 1: ETF basics</a><span>/</span>
+    <a href="etf-us-market.html">Part 2: US market</a><span>/</span>
+    <a href="qqq-creation.html">Part 3: QQQ creation</a><span>/</span>
+    <a href="qqq-secondary.html">Part 4: QQQ trading</a><span>/</span>
+    <a href="etf-monitoring.html">Part 5: Monitoring</a><span>/</span>
+    <span>Part 6: Broadridge</span>
+  </nav>
+
+  <header>
+    <p class="eyebrow">Financial markets primer · Part 6</p>
+    <h1>Broadridge — The Hidden Infrastructure of ETF Markets</h1>
+    <p class="subtitle">Most people have never heard of Broadridge. Yet it touches almost every ETF transaction in the US — processing trades, delivering fund documents, routing proxy votes, and tracking who owns what. It is the operating system running silently beneath the markets.</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="show(0)">① Who is Broadridge?</button>
+    <button class="tab-btn" onclick="show(1)">② Post-trade processing</button>
+    <button class="tab-btn" onclick="show(2)">③ Investor communications</button>
+    <button class="tab-btn" onclick="show(3)">④ Proxy voting</button>
+    <button class="tab-btn" onclick="show(4)">⑤ Distribution analytics</button>
+    <button class="tab-btn" onclick="show(5)">⑥ Where it fits</button>
+  </div>
+
+  <!-- ① Who is Broadridge -->
+  <div class="panel active" id="p0">
+    <div class="panel-header">
+      <p class="panel-title">Who is Broadridge and why does it matter for ETFs?</p>
+      <p class="panel-desc">Broadridge Financial Solutions (NYSE: BR) is a fintech company that provides the back-office infrastructure most large financial firms outsource. It is one of the most systemically important companies in US capital markets — and one of the least visible to the public.</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Daily trade volume processed</div>
+        <div class="stat-value">&gt;$15T</div>
+        <div class="stat-sub">Fixed income &amp; equity</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Equity positions tracked</div>
+        <div class="stat-value">~900M</div>
+        <div class="stat-sub">US equity positions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Trade processing accounts</div>
+        <div class="stat-value">120M</div>
+        <div class="stat-sub">On Broadridge platform</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Annual communications</div>
+        <div class="stat-value">7B</div>
+        <div class="stat-sub">Regulatory + customer</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Mutual funds &amp; ETFs served</div>
+        <div class="stat-value">120K+</div>
+        <div class="stat-sub">Including QQQ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Global investment banks</div>
+        <div class="stat-value">7 of 10</div>
+        <div class="stat-sub">Largest use Broadridge for equity trades</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Broadridge sits between fund managers, brokers, investors and regulators as the shared infrastructure layer">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <!-- Participants around the outside -->
+        <rect x="20"  y="20"  width="154" height="56" rx="8" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="97"  y="45"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Fund managers</text>
+        <text x="97"  y="63"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Invesco, BlackRock…</text>
+
+        <rect x="586" y="20"  width="154" height="56" rx="8" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="663" y="45"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Broker-dealers</text>
+        <text x="663" y="63"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Fidelity, Schwab, GS…</text>
+
+        <rect x="20"  y="224" width="154" height="56" rx="8" fill="#e1f5ee" stroke="#085041" stroke-width="0.5"/>
+        <text x="97"  y="249" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#085041">Regulators</text>
+        <text x="97"  y="267" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">SEC, FINRA, DTCC</text>
+
+        <rect x="586" y="224" width="154" height="56" rx="8" fill="#e1f5ee" stroke="#085041" stroke-width="0.5"/>
+        <text x="663" y="249" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#085041">Investors</text>
+        <text x="663" y="267" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">Retail &amp; institutional</text>
+
+        <!-- Central Broadridge -->
+        <rect x="240" y="90" width="280" height="120" rx="12" fill="#efedfd" stroke="#3d2d8a" stroke-width="1.5"/>
+        <text x="380" y="128" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="15" font-weight="600" fill="#3d2d8a">Broadridge</text>
+        <text x="380" y="150" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Post-trade · Communications</text>
+        <text x="380" y="168" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Proxy voting · Distribution data</text>
+        <text x="380" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">The shared infrastructure layer</text>
+
+        <!-- Connection arrows -->
+        <line x1="176" y1="48"  x2="238" y2="120" stroke="#3d2d8a" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arr)"/>
+        <line x1="584" y1="48"  x2="522" y2="120" stroke="#3d2d8a" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arr)"/>
+        <line x1="176" y1="252" x2="238" y2="192" stroke="#3d2d8a" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arr)"/>
+        <line x1="584" y1="252" x2="522" y2="192" stroke="#3d2d8a" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arr)"/>
+
+        <text x="380" y="284" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Every arrow represents a workflow Broadridge runs on behalf of the financial industry</text>
+      </svg>
+    </div>
+    <div class="callout">💡 Broadridge was spun out of ADP (the payroll company) in 2007. ADP had built brokerage back-office services as a side business in the 1960s — and by the time it spun off, that side business had become the plumbing of Wall Street. Today Broadridge serves 21 of 25 US fixed income primary dealers and 14 of 15 of the largest US wealth providers.</div>
+    <div class="callout-amber">⚠️ Systemic importance: because so many firms outsource their back-office to Broadridge, a Broadridge outage would be felt across the entire US financial system simultaneously. The SEC and FINRA monitor Broadridge as a critical financial market utility alongside the DTCC.</div>
+  </div>
+
+  <!-- ② Post-trade processing -->
+  <div class="panel" id="p1">
+    <div class="panel-header">
+      <p class="panel-title">Post-trade processing — what happens after your QQQ trade executes</p>
+      <p class="panel-desc">When you buy or sell QQQ on Nasdaq, the trade is matched in microseconds — but then a complex sequence of back-office steps must happen before the shares and cash actually change hands. Broadridge runs most of this for the industry.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Post-trade processing flow from trade execution through Broadridge to DTCC settlement">
+        <defs><marker id="arr1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <!-- Step boxes top to bottom -->
+        <rect x="240" y="14" width="280" height="52" rx="8" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="380" y="35" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Trade executes on Nasdaq</text>
+        <text x="380" y="54" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Buyer + seller matched · microseconds · 9:30–4:00 PM ET</text>
+        <line x1="380" y1="66" x2="380" y2="90" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
+        <text x="392" y="82" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">trade date (T)</text>
+
+        <rect x="240" y="92" width="280" height="52" rx="8" fill="#efedfd" stroke="#3d2d8a" stroke-width="1"/>
+        <text x="380" y="113" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#3d2d8a">Broadridge — trade capture</text>
+        <text x="380" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#3d2d8a">Receives trade record from broker · enriches with settlement instructions</text>
+        <line x1="380" y1="144" x2="380" y2="168" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
+
+        <rect x="240" y="170" width="280" height="52" rx="8" fill="#efedfd" stroke="#3d2d8a" stroke-width="1"/>
+        <text x="380" y="191" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#3d2d8a">Broadridge — trade matching</text>
+        <text x="380" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#3d2d8a">Confirms buyer and seller records agree · flags breaks for resolution</text>
+        <line x1="380" y1="222" x2="380" y2="246" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
+        <text x="392" y="238" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">affirmed by 9 PM T</text>
+
+        <rect x="240" y="248" width="280" height="52" rx="8" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="380" y="269" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">DTCC / NSCC</text>
+        <text x="380" y="288" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Central counterparty · nets positions across all market participants</text>
+        <line x1="380" y1="300" x2="380" y2="324" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr1)" fill="none"/>
+        <text x="392" y="316" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">settlement (T+1)</text>
+
+        <rect x="240" y="326" width="280" height="42" rx="8" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="380" y="344" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">DTC settlement</text>
+        <text x="380" y="362" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">Shares move to buyer · cash moves to seller · final &amp; irrevocable</text>
+
+        <!-- Side labels -->
+        <rect x="20" y="92" width="200" height="130" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="120" y="118" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#7a4a0a">What Broadridge does</text>
+        <text x="30"  y="140" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">· Captures trade from broker</text>
+        <text x="30"  y="158" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">· Enriches with SSIs from DTCC</text>
+        <text x="30"  y="176" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">· Matches buy/sell records</text>
+        <text x="30"  y="194" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">· Flags breaks for resolution</text>
+        <text x="30"  y="212" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">· Submits affirmed trade to DTCC</text>
+        <line x1="222" y1="157" x2="238" y2="157" stroke="#7a4a0a" stroke-width="1" stroke-dasharray="3 2" fill="none" marker-end="url(#arr1)"/>
+
+        <rect x="540" y="92" width="200" height="80" rx="8" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="640" y="118" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#1a3d2a">T+1 settlement</text>
+        <text x="550" y="140" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">Since May 2024, US equities</text>
+        <text x="550" y="158" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">including ETFs settle in</text>
+        <text x="550" y="172" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">1 business day — not 2</text>
+        <line x1="522" y1="157" x2="540" y2="157" stroke="#1a5c3a" stroke-width="1" stroke-dasharray="3 2" fill="none"/>
+      </svg>
+    </div>
+    <div class="callout">💡 The T+1 settlement cycle — moved from T+2 in May 2024 — compressed the window Broadridge has to match and affirm trades from the next morning to 9 PM on trade date. Broadridge built the industry infrastructure to handle this across 120 million accounts simultaneously.</div>
+    <div class="callout-blue">📋 For ETF creation/redemption specifically: Broadridge's systems also handle the DTCC's ETF creation and redemption workflow — the back-office matching when an AP delivers a basket of stocks to Invesco in exchange for new QQQ units. The DTCC's Universal Trade Capture (UTC) system, which Broadridge interfaces with, assigns the settlement date for these transactions.</div>
+  </div>
+
+  <!-- ③ Investor communications -->
+  <div class="panel" id="p2">
+    <div class="panel-header">
+      <p class="panel-title">Investor communications — the legal pipeline between Invesco and you</p>
+      <p class="panel-desc">Invesco is legally required to send regulatory documents to every QQQ shareholder. But Invesco doesn't know who you are — your broker does. Broadridge solves this problem for the entire industry.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Communications flow: Invesco sends documents to Broadridge which identifies beneficial owners through brokers and delivers to investors">
+        <defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <!-- Invesco -->
+        <rect x="20" y="110" width="148" height="80" rx="9" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="94" y="142" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">Invesco</text>
+        <text x="94" y="160" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">Creates documents:</text>
+        <text x="94" y="176" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">prospectus, annual report,</text>
+        <text x="94" y="192" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">tax forms, fund updates</text>
+
+        <line x1="170" y1="150" x2="220" y2="150" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr2)" fill="none"/>
+
+        <!-- Broadridge centre -->
+        <rect x="222" y="60" width="316" height="180" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="1.5"/>
+        <text x="380" y="92"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="14" font-weight="600" fill="#3d2d8a">Broadridge</text>
+        <text x="380" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Receives documents from Invesco</text>
+        <text x="380" y="134" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Queries broker network for all</text>
+        <text x="380" y="154" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">beneficial owners of QQQ</text>
+        <text x="380" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Delivers correct document to</text>
+        <text x="380" y="198" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">each investor via email or mail</text>
+        <text x="380" y="222" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">80% of ETF communications now digital</text>
+
+        <!-- Broker cloud -->
+        <rect x="222" y="264" width="316" height="36" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="380" y="286" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">Broker network: Fidelity · Schwab · Merrill · TD · Robinhood · 500+ others</text>
+        <line x1="380" y1="240" x2="380" y2="262" stroke="#7a4a0a" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arr2)"/>
+
+        <!-- Arrow out to investors -->
+        <line x1="540" y1="150" x2="590" y2="150" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr2)" fill="none"/>
+
+        <!-- Investors -->
+        <rect x="592" y="80" width="150" height="140" rx="9" fill="#f1efe8" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="667" y="112" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#1a1917">QQQ investors</text>
+        <text x="667" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Receive by email:</text>
+        <text x="667" y="150" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">· Prospectus updates</text>
+        <text x="667" y="168" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">· Annual report</text>
+        <text x="667" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">· 1099-DIV tax form</text>
+        <text x="667" y="204" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">· Proxy notices</text>
+      </svg>
+    </div>
+
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-num">Document type 01</div>
+        <div class="role-name">Prospectus and fund updates</div>
+        <div class="role-body">When Invesco changes QQQ's fees, trustees, or investment policy, every investor must be notified. Broadridge delivers this to millions of accounts simultaneously — in the correct format for each broker's platform.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Document type 02</div>
+        <div class="role-name">Annual and semi-annual reports</div>
+        <div class="role-body">Required by the SEC. Covers QQQ's performance, holdings, costs, and NAV history for the period. Broadridge processes 2 billion regulatory fund communications per year across all funds it serves.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Document type 03</div>
+        <div class="role-name">Tax documents (1099-DIV)</div>
+        <div class="role-body">Each year, investors in QQQ receive a 1099-DIV showing any dividend income passed through from the underlying stocks. Broadridge manages the production and delivery of these across millions of accounts with different tax situations.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Document type 04</div>
+        <div class="role-name">Householding and preference</div>
+        <div class="role-body">If two people at the same address both hold QQQ, Broadridge can consolidate the mailing into one envelope ("householding") — saving cost. Investors can set preferences for paper vs digital through Broadridge's portal.</div>
+      </div>
+    </div>
+    <div class="callout">💡 The "street name" problem: when you hold QQQ through Fidelity, the shares are technically registered to "Fidelity" at the DTC — not to you personally. You are a "beneficial owner." Broadridge's entire communications business exists to solve this problem — bridging the gap between the registered holder (the broker) and the real economic owner (you).</div>
+  </div>
+
+  <!-- ④ Proxy voting -->
+  <div class="panel" id="p3">
+    <div class="panel-header">
+      <p class="panel-title">Proxy voting — Broadridge's near-monopoly in corporate governance</p>
+      <p class="panel-desc">The stocks inside QQQ — Apple, Microsoft, Nvidia and 98 others — all hold annual shareholder meetings. Those votes must be cast by whoever holds the shares. QQQ holds the shares. Broadridge routes the votes.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Proxy voting chain from Apple AGM through Broadridge to Invesco to QQQ investors">
+        <defs><marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <!-- Apple AGM -->
+        <rect x="20" y="110" width="138" height="80" rx="9" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="89" y="143" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Apple AGM</text>
+        <text x="89" y="161" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Issues ballot: elect</text>
+        <text x="89" y="177" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">directors, exec pay…</text>
+
+        <line x1="160" y1="150" x2="200" y2="150" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Broadridge -->
+        <rect x="202" y="60" width="196" height="180" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="1.5"/>
+        <text x="300" y="92"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#3d2d8a">Broadridge</text>
+        <text x="300" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Receives ballot from Apple</text>
+        <text x="300" y="134" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Identifies all shareholders</text>
+        <text x="300" y="154" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">via broker network</text>
+        <text x="300" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Sends Invesco its</text>
+        <text x="300" y="196" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">QQQ vote allocation</text>
+        <text x="300" y="218" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">ProxyEdge platform</text>
+        <text x="300" y="234" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">used by institutions</text>
+
+        <line x1="400" y1="150" x2="440" y2="150" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Invesco -->
+        <rect x="442" y="110" width="148" height="80" rx="9" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="516" y="143" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">Invesco</text>
+        <text x="516" y="161" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">Votes on behalf of</text>
+        <text x="516" y="177" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">QQQ shareholders</text>
+
+        <line x1="592" y1="150" x2="632" y2="150" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Result back to Apple -->
+        <rect x="634" y="110" width="108" height="80" rx="9" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="688" y="143" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#7a4a0a">Vote submitted</text>
+        <text x="688" y="161" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Counted at</text>
+        <text x="688" y="177" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Apple AGM</text>
+
+        <!-- Invesco voting policy note -->
+        <rect x="20" y="220" width="720" height="48" rx="8" fill="#f1efe8" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="380" y="240" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#1a1917">Invesco's voting policy</text>
+        <text x="380" y="258" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Invesco votes in the "economic best interest" of QQQ investors — following its published proxy voting guidelines. It does not pass individual votes to retail investors, though institutional QQQ holders may influence votes through engagement.</text>
+
+        <text x="380" y="316" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Scale: QQQ holds ~$26B of Apple stock — making Invesco one of Apple's top 5 shareholders. Broadridge routes that vote every year.</text>
+      </svg>
+    </div>
+    <div class="callout-amber">⚠️ Near-monopoly: A 2010 US House Committee report noted Broadridge's near-monopoly position in proxy voting infrastructure. It remains the dominant provider today — connecting over 200 million investors to virtually every public company, mutual fund, and ETF. This concentration is both efficient and a systemic risk regulators monitor closely.</div>
+    <div class="callout">💡 Because QQQ is a Unit Investment Trust, Invesco must vote the underlying stocks — it cannot abstain. Broadridge's ProxyEdge platform is what Invesco's stewardship team uses to manage hundreds of proxy votes per year across every stock in QQQ's portfolio.</div>
+  </div>
+
+  <!-- ⑤ Distribution analytics -->
+  <div class="panel" id="p4">
+    <div class="panel-header">
+      <p class="panel-title">Distribution analytics — Broadridge's intelligence layer for asset managers</p>
+      <p class="panel-desc">Beyond operations, Broadridge sits on a uniquely valuable dataset: because it processes the back-office for most brokers, it can see — in aggregate — exactly where money is flowing into and out of every fund. Asset managers like Invesco pay for this intelligence.</p>
+    </div>
+
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-num">Analytics product 01</div>
+        <div class="role-name">Fund flow intelligence</div>
+        <div class="role-body">Broadridge tracks net inflows and outflows across every fund and every distribution channel — by broker, by advisor, by region. Invesco uses this to see which Fidelity advisors are growing QQQ positions and which are switching to a rival ETF.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Analytics product 02</div>
+        <div class="role-name">Advisor-level data</div>
+        <div class="role-body">Broadridge's data shows which individual financial advisors hold which ETFs across their books. This is commercially sensitive intelligence that Invesco's wholesalers use to prioritise sales calls and measure distribution effectiveness.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Analytics product 03</div>
+        <div class="role-name">Competitive positioning</div>
+        <div class="role-body">Invesco can see — via Broadridge — how QQQ's flows compare to BlackRock's QQQ-equivalent, Fidelity's ONEQ, and every other Nasdaq-100 tracker. This market intelligence doesn't exist in any public source — it comes from Broadridge's unique position in the plumbing.</div>
+      </div>
+      <div class="role-card">
+        <div class="role-num">Analytics product 04</div>
+        <div class="role-name">Active ETF launch support</div>
+        <div class="role-body">For new ETF launches, Broadridge provides market sizing, target advisor profiling, and early flow monitoring. Its 2025 Active ETF report — drawing on actual distribution data — showed only 11% of active ETFs launched in the past three years raised over $100M in their first year.</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Broadridge distribution data flow: broker back-office data aggregated into intelligence for asset managers">
+        <defs><marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <!-- Brokers -->
+        <rect x="20"  y="80" width="110" height="56" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="75"  y="106" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#7a4a0a">Fidelity</text>
+        <text x="75"  y="124" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">position data</text>
+
+        <rect x="20"  y="148" width="110" height="56" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="75"  y="174" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#7a4a0a">Schwab</text>
+        <text x="75"  y="192" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">position data</text>
+
+        <rect x="20"  y="16"  width="110" height="56" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="75"  y="42"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="600" fill="#7a4a0a">500+ brokers</text>
+        <text x="75"  y="60"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">position data</text>
+
+        <!-- Arrows to Broadridge -->
+        <line x1="132" y1="44"  x2="232" y2="100" stroke="#7a4a0a" stroke-width="1" marker-end="url(#arr4)" fill="none"/>
+        <line x1="132" y1="108" x2="232" y2="108" stroke="#7a4a0a" stroke-width="1" marker-end="url(#arr4)" fill="none"/>
+        <line x1="132" y1="176" x2="232" y2="116" stroke="#7a4a0a" stroke-width="1" marker-end="url(#arr4)" fill="none"/>
+
+        <!-- Broadridge aggregation -->
+        <rect x="234" y="60" width="222" height="96" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="1.5"/>
+        <text x="345" y="92"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#3d2d8a">Broadridge</text>
+        <text x="345" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Aggregates anonymised</text>
+        <text x="345" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">position and flow data</text>
+        <text x="345" y="150" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">~900M US equity positions tracked</text>
+
+        <!-- Arrow to Invesco -->
+        <line x1="458" y1="108" x2="508" y2="108" stroke="#3d2d8a" stroke-width="1.5" marker-end="url(#arr4)" fill="none"/>
+
+        <!-- Invesco output -->
+        <rect x="510" y="44" width="230" height="128" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="625" y="74"  text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">Invesco sees:</text>
+        <text x="520" y="96"  font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">· QQQ net flows by broker</text>
+        <text x="520" y="114" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">· QQQ vs rival ETF flows</text>
+        <text x="520" y="132" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">· Advisor-level concentration</text>
+        <text x="520" y="150" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">· Platform penetration trends</text>
+        <text x="520" y="168" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">· Early warning of outflows</text>
+
+        <text x="380" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Invesco can see this data because it runs Broadridge's back-office — it is a by-product of the operational relationship, not separately purchased market data</text>
+      </svg>
+    </div>
+    <div class="callout">💡 This is Broadridge's most strategically valuable — and least discussed — asset. Because it processes the back-office for most of the US broker industry, it has a unique cross-market view of where every dollar is flowing. No other data vendor can match it, because no other vendor is actually inside the plumbing at the same depth.</div>
+  </div>
+
+  <!-- ⑥ Where it fits in the series -->
+  <div class="panel" id="p5">
+    <div class="panel-header">
+      <p class="panel-title">Where Broadridge fits across the full ETF lifecycle</p>
+      <p class="panel-desc">Pulling it all together — where Broadridge appears in each stage of the ETF journey covered in this series, and what it does not touch.</p>
+    </div>
+    <div class="diagram-wrap">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:#6b6963;font-weight:500;padding:0 12px 10px;border-bottom:1px solid #e2e0d8;">Stage in ETF lifecycle</th>
+            <th style="text-align:left;font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:#6b6963;font-weight:500;padding:0 12px 10px;border-bottom:1px solid #e2e0d8;">Broadridge involved?</th>
+            <th style="text-align:left;font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:#6b6963;font-weight:500;padding:0 12px 10px;border-bottom:1px solid #e2e0d8;">What Broadridge does</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Fund creation (Part 1)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-amber">Peripheral</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Invesco uses Broadridge for fund accounting and regulatory filing support. The creation unit mechanism itself runs through DTCC, not Broadridge directly.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">AP creation/redemption (Part 3)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-green">Yes — settlement</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Broadridge's systems interface with DTCC's ETF creation/redemption workflow, handling the back-office settlement of the in-kind basket exchange between the AP and Invesco's custodian.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Secondary market trading (Parts 2 &amp; 4)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-green">Yes — post-trade</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Broadridge processes the post-trade workflow for most broker-dealers — trade capture, matching, affirmation, and submission to DTCC for T+1 settlement. It does not touch the trade execution itself.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Exchange order matching (Part 2)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-purple">Not involved</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Nasdaq, NYSE Arca, and CBOE run their own matching engines. Broadridge has no role in order routing, price discovery, or trade execution. That is the exchange's domain.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Investor communications (Part 5)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-green">Yes — dominant</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Broadridge is the primary infrastructure for delivering prospectuses, annual reports, tax documents, and proxy materials from Invesco to QQQ's millions of beneficial owners through the broker network.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Proxy voting — underlying stocks</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-green">Yes — near-monopoly</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Every AGM vote that Invesco casts on QQQ's Apple, Microsoft, and Nvidia shares routes through Broadridge's ProxyEdge platform. Broadridge tallies the votes and submits them back to the issuing company.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Market data and monitoring (Part 5)</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;"><span class="pill pill-green">Yes — analytics</span></td>
+            <td style="padding:10px 12px;border-bottom:1px solid #e2e0d8;color:#6b6963;">Broadridge's distribution data and analytics platform gives Invesco unique insight into where QQQ ownership is concentrated, how flows compare to rivals, and which distribution channels are growing or shrinking.</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px;font-weight:600;">Invesco's fee collection</td>
+            <td style="padding:10px 12px;"><span class="pill pill-purple">Not involved</span></td>
+            <td style="padding:10px 12px;color:#6b6963;">The 0.20% expense ratio is collected by State Street (the custodian) as a daily NAV reduction and remitted to Invesco. Broadridge is not part of this flow.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout-purple">🔭 Looking ahead: Broadridge is actively building blockchain infrastructure for tokenised securities. It is a participant in the DTCC's tokenisation working group alongside Invesco, BlackRock, Goldman Sachs, and Citadel. If ETF shares are eventually tokenised on-chain, Broadridge intends to provide the same post-trade, communications, and governance infrastructure it provides today — but on distributed ledger rails.</div>
+    <div class="callout">💡 The simplest way to think about Broadridge: it is the shared back-office that the financial industry outsources to instead of each firm building their own. Every time a QQQ trade settles, a fund document gets delivered, a proxy vote gets cast, or a distribution team checks their flow data — Broadridge is very likely the infrastructure making it happen.</div>
+  </div>
+
+  <footer>
+    <span>Broadridge in the ETF ecosystem · Part 6 of 6</span>
+    <a href="etf-monitoring.html">← Part 5: Monitoring &amp; data</a>
+  </footer>
+
+</div>
+<script>
+  function show(i) {
+    document.querySelectorAll('.panel').forEach((p, j) => p.classList.toggle('active', i === j));
+    document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', i === j));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

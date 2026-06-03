@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF Secondary Market — Monitoring &amp; Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f7f6f2; --surface:#ffffff; --border:#e2e0d8; --text:#1a1917; --muted:#6b6963;
+      --accent:#1a5c3a; --accent-light:#e6f2ec; --blue:#1a3f6b; --blue-light:#e6eef7;
+      --amber:#7a4a0a; --amber-light:#fdf3e3; --purple:#3d2d8a; --purple-light:#efedfd;
+      --coral:#8a2a15; --coral-light:#fceee9; --teal:#085041; --teal-light:#e1f5ee;
+      --radius:10px; --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem 4rem; }
+    .page { max-width:860px; margin:0 auto; }
+    .breadcrumb { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:1.5rem; flex-wrap:wrap; }
+    .breadcrumb a { color:var(--accent); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+    .breadcrumb span { opacity:0.4; }
+    header { margin-bottom:2.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
+    .eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; }
+    h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:600; line-height:1.2; margin-bottom:0.75rem; }
+    .subtitle { font-size:1rem; color:var(--muted); line-height:1.6; max-width:640px; }
+    .tab-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .tab-btn { padding:7px 16px; font-family:var(--font); font-size:13px; font-weight:500; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; transition:all .18s ease; }
+    .tab-btn:hover { background:var(--bg); color:var(--text); }
+    .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .panel-header { margin-bottom:1.25rem; }
+    .panel-title { font-size:1.15rem; font-weight:600; margin-bottom:4px; }
+    .panel-desc { font-size:0.875rem; color:var(--muted); line-height:1.65; }
+    .diagram-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem 1rem; margin-bottom:1rem; overflow-x:auto; }
+    .diagram-wrap svg { width:100%; display:block; }
+    .callout { background:var(--accent-light); border-left:3px solid var(--accent); border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:0.85rem; color:#1a3d2a; line-height:1.65; margin-bottom:1rem; }
+    .callout-amber { background:var(--amber-light); border-left:3px solid var(--amber); border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:0.85rem; color:var(--amber); line-height:1.65; margin-bottom:1rem; }
+    .callout-blue { background:var(--blue-light); border-left:3px solid var(--blue); border-radius:0 var(--radius) var(--radius) 0; padding:12px 16px; font-size:0.85rem; color:var(--blue); line-height:1.65; margin-bottom:1rem; }
+    /* Metric cards */
+    .metric-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:1.25rem; }
+    .metric-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+    .metric-name { font-size:12px; font-weight:600; margin-bottom:4px; }
+    .metric-normal { font-size:11px; color:var(--accent); margin-bottom:2px; }
+    .metric-stress { font-size:11px; color:var(--coral); margin-bottom:2px; }
+    .metric-source { font-size:10px; color:var(--muted); font-family:var(--mono); margin-top:4px; }
+    /* Tool cards */
+    .tool-section { margin-bottom:1.5rem; }
+    .tool-section-title { font-size:11px; font-family:var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+    .tool-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; }
+    .tool-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+    .tool-name { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .tool-desc { font-size:12px; color:var(--muted); line-height:1.55; }
+    .tool-cost { font-size:10px; font-family:var(--mono); margin-top:6px; padding:2px 6px; border-radius:4px; display:inline-block; }
+    .cost-free { background:var(--teal-light); color:var(--teal); }
+    .cost-paid { background:var(--amber-light); color:var(--amber); }
+    /* Audience table */
+    .aud-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .aud-table th { text-align:left; font-weight:500; font-size:11px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; letter-spacing:0.06em; padding:0 12px 8px; border-bottom:1px solid var(--border); }
+    .aud-table td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; line-height:1.55; font-size:13px; }
+    .aud-table tr:last-child td { border-bottom:none; }
+    .aud-table tr:hover td { background:var(--bg); }
+    /* Signal cards */
+    .signal-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; margin-bottom:1rem; }
+    .signal-card { border-radius:var(--radius); padding:14px 16px; border:1px solid var(--border); }
+    .signal-card.warn { border-left:3px solid var(--amber); background:var(--amber-light); }
+    .signal-card.danger { border-left:3px solid var(--coral); background:var(--coral-light); }
+    .signal-card.ok { border-left:3px solid var(--accent); background:var(--accent-light); }
+    .signal-title { font-size:13px; font-weight:600; margin-bottom:4px; }
+    .signal-body { font-size:12px; line-height:1.6; color:var(--muted); }
+    footer { margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); font-size:12px; color:var(--muted); font-family:var(--mono); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    footer a { color:var(--accent); text-decoration:none; }
+    footer a:hover { text-decoration:underline; }
+    @media (max-width:520px) { .tab-btn { font-size:12px; padding:6px 12px; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="breadcrumb">
+    <a href="etf-explainer.html">Part 1: ETF basics</a>
+    <span>/</span>
+    <a href="etf-us-market.html">Part 2: US market</a>
+    <span>/</span>
+    <a href="qqq-creation.html">Part 3: QQQ creation</a>
+    <span>/</span>
+    <a href="qqq-secondary.html">Part 4: QQQ trading</a>
+    <span>/</span>
+    <span>Part 5: Monitoring</span>
+  </nav>
+
+  <header>
+    <p class="eyebrow">Financial markets primer · Part 5</p>
+    <h1>Tracking the Secondary Market — Data, Metrics &amp; Surveillance</h1>
+    <p class="subtitle">How fund managers, regulators, institutions and investors get visibility into how an ETF is trading — the data sources, key metrics to watch, warning signals, and tools available at every budget level.</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="show(0)">① Data sources</button>
+    <button class="tab-btn" onclick="show(1)">② Key metrics</button>
+    <button class="tab-btn" onclick="show(2)">③ Warning signals</button>
+    <button class="tab-btn" onclick="show(3)">④ Who monitors what</button>
+    <button class="tab-btn" onclick="show(4)">⑤ Tools &amp; vendors</button>
+  </div>
+
+  <!-- ① Data sources -->
+  <div class="panel active" id="p0">
+    <div class="panel-header">
+      <p class="panel-title">Where the secondary market data comes from</p>
+      <p class="panel-desc">ETF market data flows from exchange matching engines through a layered infrastructure. Each layer trades off latency for cost and accessibility.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ETF market data stack: four layers from exchange feeds to end users">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Layer 1 -->
+        <rect x="20" y="20" width="720" height="76" rx="10" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="36" y="48" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Layer 1 — Exchange &amp; regulatory feeds</text>
+        <text x="36" y="66" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Real-time · microsecond latency · mandatory public publication</text>
+        <rect x="310" y="34" width="118" height="50" rx="6" fill="#b5d4f4" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="369" y="59" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#1a3f6b">SIP / NBBO feed</text>
+        <text x="369" y="75" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Consolidated quotes</text>
+        <rect x="438" y="34" width="118" height="50" rx="6" fill="#b5d4f4" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="497" y="59" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#1a3f6b">IOPV (iNAV)</text>
+        <text x="497" y="75" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Indicative NAV ×15s</text>
+        <rect x="566" y="34" width="118" height="50" rx="6" fill="#b5d4f4" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="625" y="59" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#1a3f6b">Exchange prints</text>
+        <text x="625" y="75" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a3f6b">Every trade reported</text>
+
+        <line x1="380" y1="96" x2="380" y2="126" stroke="#1a3f6b" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 2 -->
+        <rect x="20" y="128" width="720" height="76" rx="10" fill="#e1f5ee" stroke="#085041" stroke-width="0.5"/>
+        <text x="36" y="156" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#085041">Layer 2 — Regulatory &amp; fund disclosures</text>
+        <text x="36" y="174" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Daily / quarterly · public filings · free to access</text>
+        <rect x="310" y="142" width="118" height="50" rx="6" fill="#9fe1cb" stroke="#085041" stroke-width="0.5"/>
+        <text x="369" y="167" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#085041">SEC EDGAR</text>
+        <text x="369" y="183" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">N-CEN, 13F, S-1</text>
+        <rect x="438" y="142" width="118" height="50" rx="6" fill="#9fe1cb" stroke="#085041" stroke-width="0.5"/>
+        <text x="497" y="167" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#085041">FINRA ATS data</text>
+        <text x="497" y="183" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">Dark pool volumes</text>
+        <rect x="566" y="142" width="118" height="50" rx="6" fill="#9fe1cb" stroke="#085041" stroke-width="0.5"/>
+        <text x="625" y="167" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#085041">Fund PCF file</text>
+        <text x="625" y="183" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">Daily creation basket</text>
+
+        <line x1="380" y1="204" x2="380" y2="234" stroke="#085041" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 3 -->
+        <rect x="20" y="236" width="720" height="76" rx="10" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="36" y="264" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#7a4a0a">Layer 3 — Data aggregators &amp; analytics vendors</text>
+        <text x="36" y="282" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Normalised · enriched · charted · subscription required for most</text>
+        <rect x="310" y="250" width="118" height="50" rx="6" fill="#fac775" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="369" y="275" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#7a4a0a">Bloomberg</text>
+        <text x="369" y="291" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Terminal (ETF monitor)</text>
+        <rect x="438" y="250" width="118" height="50" rx="6" fill="#fac775" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="497" y="275" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#7a4a0a">FactSet / Refinitiv</text>
+        <text x="497" y="291" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Analytics suite</text>
+        <rect x="566" y="250" width="118" height="50" rx="6" fill="#fac775" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="625" y="275" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" font-weight="500" fill="#7a4a0a">ETF.com / CFRA</text>
+        <text x="625" y="291" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">ETF-specific research</text>
+
+        <line x1="380" y1="312" x2="380" y2="342" stroke="#7a4a0a" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- Layer 4 -->
+        <rect x="20" y="344" width="720" height="50" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="36" y="368" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#3d2d8a">Layer 4 — End users</text>
+        <rect x="310" y="354" width="108" height="30" rx="5" fill="#cecbf6" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="364" y="373" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Fund managers</text>
+        <rect x="428" y="354" width="108" height="30" rx="5" fill="#cecbf6" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="482" y="373" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Regulators</text>
+        <rect x="546" y="354" width="138" height="30" rx="5" fill="#cecbf6" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="615" y="373" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Institutions &amp; retail</text>
+
+        <text x="380" y="402" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Latency: exchange feed = microseconds · regulatory report = 10 seconds · SEC filing = next business day</text>
+      </svg>
+    </div>
+    <div class="callout">💡 The IOPV (Indicative Optimised Portfolio Value) is published every 15 seconds during market hours. It's calculated from the real-time prices of QQQ's underlying 101 stocks — giving APs and large traders a continuous benchmark to compare against the ETF's live market price.</div>
+    <div class="callout-blue">📋 Key public URLs: SEC EDGAR filings → edgar.sec.gov · FINRA ATS data → finra.org/finra-data/browse-catalog/equity-short-interest · Invesco QQQ fund page → invesco.com/qqq · ETF.com QQQ page → etf.com/QQQ</div>
+  </div>
+
+  <!-- ② Key metrics -->
+  <div class="panel" id="p1">
+    <div class="panel-header">
+      <p class="panel-title">The six metrics every ETF watcher tracks</p>
+      <p class="panel-desc">These numbers tell you whether the secondary market is functioning well — and flag early when something is wrong. Each has a normal range and a stress threshold.</p>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric-card">
+        <div class="metric-name">Bid-ask spread</div>
+        <div class="metric-normal">Normal (QQQ): $0.01</div>
+        <div class="metric-stress">Stress signal: &gt; $0.05</div>
+        <div class="metric-source">Source: Bloomberg, Nasdaq TotalView</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">The cost of an immediate round-trip trade. Widens when market makers pull back in volatile conditions.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Premium / discount to NAV</div>
+        <div class="metric-normal">Normal: &lt; 0.05%</div>
+        <div class="metric-stress">Stress signal: &gt; 0.5% sustained</div>
+        <div class="metric-source">Source: ETF.com, fund sponsor website</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">ETF market price vs. true value of holdings. Large sustained gaps signal underlying market stress or AP hesitation.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Daily trading volume</div>
+        <div class="metric-normal">Normal (QQQ): ~$17B/day</div>
+        <div class="metric-stress">Signal: 3× spike or &gt;50% drop</div>
+        <div class="metric-source">Source: Nasdaq, Bloomberg, Yahoo Finance</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">Volume spikes on macro events; drops signal low conviction. Relative volume vs 20-day average is most useful.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Shares outstanding / fund flows</div>
+        <div class="metric-normal">Rising = net creation (inflows)</div>
+        <div class="metric-stress">Falling = net redemption (outflows)</div>
+        <div class="metric-source">Source: ETF.com, fund sponsor, Bloomberg</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">The cleanest signal of investor conviction. Unlike volume, flows show whether money is entering or leaving the fund.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Tracking error</div>
+        <div class="metric-normal">Normal (QQQ): &lt; 0.03%/day</div>
+        <div class="metric-stress">Stress: &gt; 0.10%/day</div>
+        <div class="metric-source">Source: FactSet, Morningstar, fund reports</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">Difference between ETF daily return and Nasdaq-100 return. Chronic drift may indicate dividend handling or rebalancing issues.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-name">Short interest</div>
+        <div class="metric-normal">Normal (QQQ): 10–15% of float</div>
+        <div class="metric-stress">Elevated: &gt; 25%</div>
+        <div class="metric-source">Source: FINRA bi-weekly, S3 Partners, Ortex</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5;">ETFs can have short interest exceeding 100% of shares — legally, because shares can be re-lent. High short interest often reflects hedging demand, not negative sentiment.</div>
+      </div>
+    </div>
+    <div class="callout">💡 Fund flows (shares outstanding changes) are the most misunderstood metric. A day with $5B of volume and zero change in shares outstanding means all trading was between existing investors — the fund itself was untouched. Only when APs create or redeem do shares outstanding change.</div>
+  </div>
+
+  <!-- ③ Warning signals -->
+  <div class="panel" id="p2">
+    <div class="panel-header">
+      <p class="panel-title">Warning signals — what to watch for and what it means</p>
+      <p class="panel-desc">These are the real-world patterns that analysts and compliance teams treat as flags. Each has a distinct cause and appropriate response.</p>
+    </div>
+
+    <div class="signal-grid">
+      <div class="signal-card danger">
+        <div class="signal-title" style="color:var(--coral);">Sustained premium &gt;0.5%</div>
+        <div class="signal-body">Demand for ETF exceeds supply. APs should be creating units — if they are not, it may mean the underlying basket is illiquid or difficult to assemble. Seen in high-yield bond ETFs during March 2020.</div>
+      </div>
+      <div class="signal-card danger">
+        <div class="signal-title" style="color:var(--coral);">Sustained discount &gt;0.5%</div>
+        <div class="signal-body">Panic selling of ETF faster than APs can redeem. May signal underlying market stress — the ETF's NAV may itself be stale if underlying assets aren't trading.</div>
+      </div>
+      <div class="signal-card warn">
+        <div class="signal-title" style="color:var(--amber);">Spread widening to 5–10× normal</div>
+        <div class="signal-body">Market makers pulling back their quotes — often during news shocks, circuit breakers, or around open/close. Costly time to trade. Usually resolves within minutes.</div>
+      </div>
+      <div class="signal-card warn">
+        <div class="signal-title" style="color:var(--amber);">Volume spike without price move</div>
+        <div class="signal-body">Large block crossing — typically a pension fund rebalancing via dark pool at the mid-price. No information signal in the price; confirms institutional activity.</div>
+      </div>
+      <div class="signal-card warn">
+        <div class="signal-title" style="color:var(--amber);">Sudden large outflow</div>
+        <div class="signal-body">Shares outstanding drop sharply — a large institution redeemed. Can be a tactical shift (risk-off) or a mandate change. Watch if it persists over multiple days.</div>
+      </div>
+      <div class="signal-card ok">
+        <div class="signal-title" style="color:var(--accent);">High volume + tight spread</div>
+        <div class="signal-body">Healthy functioning market — lots of activity, market makers competing aggressively. Typical on earnings days or macro announcements. Good time to transact.</div>
+      </div>
+      <div class="signal-card ok">
+        <div class="signal-title" style="color:var(--accent);">Consistent inflows over weeks</div>
+        <div class="signal-body">Steady net creation — retail or institutional accumulation. Long-term positive for the fund's AUM and for Invesco's fee revenue. QQQ saw this throughout 2023–2024 AI boom.</div>
+      </div>
+      <div class="signal-card warn">
+        <div class="signal-title" style="color:var(--amber);">Tracking error drift &gt;0.10%/day</div>
+        <div class="signal-body">ETF is not perfectly following its index. Could be a dividend timing issue, a rebalancing lag, or a custody problem. Worth checking against the fund's official daily NAV.</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline of ETF market stress events and their premium/discount signature">
+        <text x="380" y="20" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a1917">Historical stress events and their ETF market signature</text>
+        <rect x="20" y="34" width="720" height="30" rx="5" fill="#f1efe8" stroke="#e2e0d8" stroke-width="0.5"/>
+        <!-- Timeline bar -->
+        <text x="36" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2008</text>
+        <text x="160" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2010 Flash Crash</text>
+        <text x="300" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2015 Aug</text>
+        <text x="430" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2020 COVID</text>
+        <text x="570" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2022 Rate rise</text>
+        <text x="680" y="54" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">2024</text>
+
+        <rect x="20" y="76" width="160" height="40" rx="5" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="100" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">Credit ETF spreads: +300%</text>
+        <text x="100" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">Equity ETFs held up well</text>
+
+        <rect x="190" y="76" width="110" height="40" rx="5" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="245" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">ETFs traded at</text>
+        <text x="245" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">60% discount briefly</text>
+
+        <rect x="310" y="76" width="110" height="40" rx="5" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="365" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Spreads spiked</text>
+        <text x="365" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">at open, recovered</text>
+
+        <rect x="430" y="76" width="130" height="40" rx="5" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="495" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">HY bond ETFs -5%</text>
+        <text x="495" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">NAV vs price; equity OK</text>
+
+        <rect x="570" y="76" width="130" height="40" rx="5" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="635" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Bond ETF discount</text>
+        <text x="635" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">~0.5%, normalised</text>
+
+        <text x="380" y="148" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Equity ETFs like QQQ are far more resilient to stress than fixed income ETFs — their underlying stocks never stop trading</text>
+      </svg>
+    </div>
+    <div class="callout-amber">⚠️ The March 2020 case study: During COVID panic, high-yield bond ETFs like HYG and JNK traded at 3–5% discounts to NAV. This wasn't ETF failure — it was the ETFs accurately reflecting true market prices while the underlying bond market, which trades OTC in bilateral deals, had effectively frozen. The ETF was more transparent than the thing it tracked.</div>
+  </div>
+
+  <!-- ④ Who monitors what -->
+  <div class="panel" id="p3">
+    <div class="panel-header">
+      <p class="panel-title">Who monitors what — by audience and role</p>
+      <p class="panel-desc">Each participant has different data access, monitoring frequency, and decision timescales. Distribution teams typically sit between the fund manager and retail investor layers.</p>
+    </div>
+    <div class="diagram-wrap">
+      <table class="aud-table">
+        <thead>
+          <tr>
+            <th style="width:18%;">Audience</th>
+            <th style="width:20%;">Monitoring frequency</th>
+            <th style="width:30%;">What they watch</th>
+            <th style="width:32%;">Primary data sources</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Invesco (fund manager)</strong></td>
+            <td>Real-time + end of day</td>
+            <td>NAV accuracy, tracking error, creation/redemption activity, AUM changes, shares outstanding, IOPV vs market price</td>
+            <td>Internal systems, SIP feed, State Street (custodian), DTCC settlement reports</td>
+          </tr>
+          <tr>
+            <td><strong>SEC / FINRA (regulators)</strong></td>
+            <td>Real-time surveillance + periodic review</td>
+            <td>Manipulation patterns, large trader positions, ATS volume reports, short sale data, compliance with Reg NMS</td>
+            <td>Consolidated Audit Trail (CAT), FINRA TRACE, 13F filings, ATS disclosure reports</td>
+          </tr>
+          <tr>
+            <td><strong>Authorised participants</strong></td>
+            <td>Real-time (microseconds)</td>
+            <td>IOPV vs ETF price (arbitrage gap), order book depth, options implied vol, creation basket cost vs ETF price</td>
+            <td>Bloomberg Terminal, direct exchange feeds, proprietary systems, fund PCF file</td>
+          </tr>
+          <tr>
+            <td><strong>Hedge funds / inst. traders</strong></td>
+            <td>Real-time to daily</td>
+            <td>ETF vs underlying basket divergence, sector flows, short interest trends, dark pool prints, options skew</td>
+            <td>Bloomberg, Refinitiv, S3 Partners, Ortex, prime broker reports</td>
+          </tr>
+          <tr>
+            <td><strong>Distribution teams</strong></td>
+            <td>Daily + weekly</td>
+            <td>Fund flows (net inflows/outflows), AUM vs peers, premium/discount history, 30/60/90-day volume trends, competitive positioning vs rival ETFs</td>
+            <td>ETF.com, Morningstar, FactSet, Bloomberg, fund sponsor dashboards</td>
+          </tr>
+          <tr>
+            <td><strong>Retail investors</strong></td>
+            <td>Daily or less</td>
+            <td>Closing price, YTD total return, expense ratio, top holdings, dividend history</td>
+            <td>Brokerage platform, Invesco.com, ETF.com, Yahoo Finance, Morningstar free tier</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">💡 Distribution teams have a specific monitoring need that sits between fund manager and retail: tracking competitive fund flows. Knowing whether money is flowing into QQQ vs QQQM vs rival Nasdaq-100 ETFs (like Fidelity's ONEQ) tells you how your distribution channels are performing relative to the market.</div>
+  </div>
+
+  <!-- ⑤ Tools & vendors -->
+  <div class="panel" id="p4">
+    <div class="panel-header">
+      <p class="panel-title">The monitoring toolkit — tools and vendors by tier</p>
+      <p class="panel-desc">From free public data to enterprise terminals — the right tool depends on your role, latency requirements, and budget.</p>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">Institutional real-time (&lt;1 second latency) — $10K–$30K/year</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-name">Bloomberg Terminal</div>
+          <div class="tool-desc">The industry standard. ETF Monitor (ETFM function), real-time IOPV, order book, fund flows, creation/redemption history, peer comparison. Used by Invesco's own trading desk.</div>
+          <div class="tool-cost cost-paid">~$27K/year per user</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Nasdaq TotalView</div>
+          <div class="tool-desc">Full depth-of-book for all Nasdaq-listed ETFs including QQQ. Shows every bid and ask at every price level, updated in real time. Preferred by market makers and APs.</div>
+          <div class="tool-cost cost-paid">~$300/month</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Refinitiv Eikon (LSEG)</div>
+          <div class="tool-desc">Bloomberg alternative. Strong on fixed income ETF analytics and cross-asset flow data. Widely used at European asset managers and banks.</div>
+          <div class="tool-cost cost-paid">~$22K/year</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Direct exchange FIX feeds</div>
+          <div class="tool-desc">Raw market data directly from NYSE Arca, Nasdaq, CBOE. Microsecond latency. Used exclusively by APs and HFT firms for arbitrage. Requires co-location infrastructure.</div>
+          <div class="tool-cost cost-paid">$2K–$10K/month</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">Professional daily — $5K–$15K/year</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-name">FactSet</div>
+          <div class="tool-desc">Best-in-class for ETF fund flows, holdings analysis, and peer comparisons. Distribution teams use it to track where money is moving across the ETF landscape. 13F filing aggregation is a standout feature.</div>
+          <div class="tool-cost cost-paid">~$12K/year</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Morningstar Direct</div>
+          <div class="tool-desc">Strong on long-term performance, tracking error analysis, and star ratings. Used by fund selectors and advisors who recommend ETFs to clients. Premium/discount history charts are excellent.</div>
+          <div class="tool-cost cost-paid">~$8K/year</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">CFRA ETF Navigator</div>
+          <div class="tool-desc">ETF-specific research and ratings platform. Covers holdings quality, cost analysis, and liquidity scoring. Focused on helping advisors compare ETFs within the same category.</div>
+          <div class="tool-cost cost-paid">~$5K/year</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">S3 Partners / Ortex</div>
+          <div class="tool-desc">Specialist short interest data. Shows ETF short interest in near-real-time (vs FINRA's bi-weekly lag). Used by hedge funds and risk managers to understand who is shorting what and why.</div>
+          <div class="tool-cost cost-paid">~$8K/year</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-section">
+      <div class="tool-section-title">Free public sources — no cost, daily / delayed data</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-name">ETF.com</div>
+          <div class="tool-desc">Best free ETF analytics site. Shows QQQ's premium/discount history, fund flows, trading volume, holdings, expense ratio, and peer comparison. Daily updates. No login required for most data.</div>
+          <div class="tool-cost cost-free">Free</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Invesco fund page</div>
+          <div class="tool-desc">The official source. Daily NAV, market price, premium/discount, shares outstanding, creation basket (PCF file), dividends, and SEC filings. Go directly to invesco.com/qqq for authoritative data.</div>
+          <div class="tool-cost cost-free">Free</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">SEC EDGAR</div>
+          <div class="tool-desc">All regulatory filings: N-CEN annual reports (creation/redemption totals), 13F quarterly holdings filings from large investors, and any prospectus changes. Search QQQ at edgar.sec.gov.</div>
+          <div class="tool-cost cost-free">Free</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">FINRA ATS data</div>
+          <div class="tool-desc">Bi-weekly dark pool volume by security. Shows how much QQQ trades off-exchange in each dark pool. Published publicly at finra.org. Excellent for understanding institutional block activity.</div>
+          <div class="tool-cost cost-free">Free</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Morningstar free tier</div>
+          <div class="tool-desc">Fund profile, performance history, basic holdings, and analyst commentary. Trailing 3/5/10-year returns, expense ratio comparison, and Morningstar rating accessible without subscription.</div>
+          <div class="tool-cost cost-free">Free</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">Yahoo Finance / Google Finance</div>
+          <div class="tool-desc">15-minute delayed quotes, volume, price charts, and basic news. Sufficient for retail monitoring. Not useful for intraday premium/discount or spread analysis.</div>
+          <div class="tool-cost cost-free">Free (15-min delay)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">💡 For a distribution or product team that doesn't need real-time data, the free tier (ETF.com + Invesco fund page + SEC EDGAR + FINRA ATS) covers the full picture: daily health metrics, competitive fund flows, regulatory filings, and dark pool activity — at zero cost.</div>
+  </div>
+
+  <footer>
+    <span>ETF secondary market monitoring · Part 5 of 5</span>
+    <a href="qqq-secondary.html">← Part 4: QQQ secondary market</a>
+  </footer>
+
+</div>
+<script>
+  function show(i) {
+    document.querySelectorAll('.panel').forEach((p, j) => p.classList.toggle('active', i === j));
+    document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', i === j));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
