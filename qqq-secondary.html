@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QQQ — Secondary Market Trading &amp; Invesco Revenue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7f6f2; --surface: #ffffff; --border: #e2e0d8;
+      --text: #1a1917; --muted: #6b6963; --accent: #1a5c3a;
+      --accent-light: #e6f2ec; --blue: #1a3f6b; --blue-light: #e6eef7;
+      --amber: #7a4a0a; --amber-light: #fdf3e3; --purple: #3d2d8a;
+      --purple-light: #efedfd; --coral: #8a2a15; --coral-light: #fceee9;
+      --teal: #085041; --teal-light: #e1f5ee; --radius: 10px;
+      --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem 4rem; }
+    .page { max-width: 860px; margin: 0 auto; }
+    .breadcrumb { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { opacity: 0.4; }
+    header { margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 600; line-height: 1.2; margin-bottom: 0.75rem; }
+    .subtitle { font-size: 1rem; color: var(--muted); line-height: 1.6; max-width: 640px; }
+    .tab-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .tab-btn { padding: 7px 16px; font-family: var(--font); font-size: 13px; font-weight: 500; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all 0.18s ease; }
+    .tab-btn:hover { background: var(--bg); color: var(--text); }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel-header { margin-bottom: 1.25rem; }
+    .panel-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 4px; }
+    .panel-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.65; }
+    .diagram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem 1rem; margin-bottom: 1rem; overflow-x: auto; }
+    .diagram-wrap svg { width: 100%; display: block; }
+    .callout { background: var(--accent-light); border-left: 3px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 16px; font-size: 0.85rem; color: #1a3d2a; line-height: 1.65; margin-bottom: 1rem; }
+    .callout-amber { background: var(--amber-light); border-left: 3px solid var(--amber); border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 16px; font-size: 0.85rem; color: var(--amber); line-height: 1.65; margin-bottom: 1rem; }
+    .callout-blue { background: var(--blue-light); border-left: 3px solid var(--blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 16px; font-size: 0.85rem; color: var(--blue); line-height: 1.65; margin-bottom: 1rem; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+    .stat-card { background: var(--bg); border-radius: var(--radius); padding: 14px 16px; }
+    .stat-label { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .stat-value { font-size: 1.4rem; font-weight: 600; color: var(--text); }
+    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    /* Revenue breakdown table */
+    .rev-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .rev-table th { text-align: left; font-weight: 500; font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 12px 8px; border-bottom: 1px solid var(--border); }
+    .rev-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+    .rev-table tr:last-child td { border-bottom: none; }
+    .rev-table tr:hover td { background: var(--bg); }
+    .yes { color: #1a5c3a; font-weight: 600; }
+    .no  { color: var(--coral); font-weight: 600; }
+    .pill { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; font-weight: 500; margin-left: 4px; vertical-align: middle; }
+    .pill-green  { background: var(--teal-light);   color: var(--teal); }
+    .pill-red    { background: var(--coral-light);  color: var(--coral); }
+    .pill-amber  { background: var(--amber-light);  color: var(--amber); }
+    footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); font-family: var(--mono); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 520px) { .tab-btn { font-size: 12px; padding: 6px 12px; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <nav class="breadcrumb">
+    <a href="etf-explainer.html">Part 1: ETF basics</a>
+    <span>/</span>
+    <a href="etf-us-market.html">Part 2: US market</a>
+    <span>/</span>
+    <a href="qqq-creation.html">Part 3: QQQ creation</a>
+    <span>/</span>
+    <span>Part 4: QQQ secondary market</span>
+  </nav>
+
+  <header>
+    <p class="eyebrow">Financial markets primer · Part 4</p>
+    <h1>QQQ — Secondary Market Trading &amp; How Invesco Earns</h1>
+    <p class="subtitle">Who trades QQQ on the exchange, how prices move, and the key question: does Invesco make money from secondary market trading — or only from the annual fee?</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="show(0)">① Secondary market flow</button>
+    <button class="tab-btn" onclick="show(1)">② Who trades QQQ</button>
+    <button class="tab-btn" onclick="show(2)">③ How QQQ price moves</button>
+    <button class="tab-btn" onclick="show(3)">④ Where Invesco earns</button>
+    <button class="tab-btn" onclick="show(4)">⑤ Who profits from trading</button>
+  </div>
+
+  <!-- ① Secondary market flow -->
+  <div class="panel active" id="p0">
+    <div class="panel-header">
+      <p class="panel-title">How QQQ trades in the secondary market</p>
+      <p class="panel-desc">Once QQQ shares exist — created via the AP process — they trade freely on Nasdaq between investors. Invesco plays no role in this trading. It is exactly like buying and selling any other share.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QQQ secondary market: buyers and sellers trade on Nasdaq via brokers, Invesco is not involved">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Buyer side -->
+        <rect x="20" y="100" width="158" height="80" rx="9" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="99" y="136" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">Retail investor</text>
+        <text x="99" y="154" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Buys 10 QQQ</text>
+        <text x="99" y="170" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">via Fidelity app</text>
+
+        <rect x="20" y="210" width="158" height="80" rx="9" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="99" y="246" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#3d2d8a">Hedge fund</text>
+        <text x="99" y="264" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Buys 500,000 QQQ</text>
+        <text x="99" y="280" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">via prime broker</text>
+
+        <!-- Arrows to Nasdaq -->
+        <line x1="180" y1="140" x2="236" y2="180" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="180" y1="250" x2="236" y2="210" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- Nasdaq exchange centre -->
+        <rect x="238" y="130" width="284" height="130" rx="12" fill="#e6eef7" stroke="#1a3f6b" stroke-width="1.5"/>
+        <text x="380" y="170" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="14" font-weight="600" fill="#1a3f6b">Nasdaq Exchange</text>
+        <text x="380" y="192" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">QQQ order book</text>
+        <text x="380" y="212" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Bids and asks matched</text>
+        <text x="380" y="232" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">continuously 9:30–4:00 PM ET</text>
+        <text x="380" y="250" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Market makers post bid/ask continuously</text>
+
+        <!-- Arrows from Nasdaq to sellers -->
+        <line x1="524" y1="180" x2="580" y2="140" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="524" y1="210" x2="580" y2="250" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- Seller side -->
+        <rect x="582" y="100" width="158" height="80" rx="9" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="661" y="136" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Pension fund</text>
+        <text x="661" y="154" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Sells 200,000 QQQ</text>
+        <text x="661" y="170" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">via dark pool block</text>
+
+        <rect x="582" y="210" width="158" height="80" rx="9" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="661" y="246" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#7a4a0a">Market maker</text>
+        <text x="661" y="264" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">Sells from inventory</text>
+        <text x="661" y="280" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Citadel, Virtu etc.</text>
+
+        <!-- Invesco floats to side — NOT involved -->
+        <rect x="238" y="20" width="284" height="70" rx="9" fill="#f1efe8" stroke="#e2e0d8" stroke-width="1" stroke-dasharray="5 3"/>
+        <text x="380" y="48" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#6b6963">Invesco</text>
+        <text x="380" y="66" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">NOT involved in secondary trading</text>
+        <text x="380" y="82" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Only collects annual 0.20% fee from AUM</text>
+
+        <!-- "Not connected" visual indicator -->
+        <line x1="380" y1="90" x2="380" y2="128" stroke="#e2e0d8" stroke-width="1" stroke-dasharray="3 3"/>
+
+        <!-- Bottom note -->
+        <rect x="20" y="316" width="720" height="34" rx="8" fill="var(--bg, #f7f6f2)" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="380" y="330" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Every QQQ trade on Nasdaq is between two investors — the fund's assets are unchanged.</text>
+        <text x="380" y="346" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Invesco's $290B basket sits untouched unless a creation or redemption order comes in from an AP.</text>
+      </svg>
+    </div>
+    <div class="callout">💡 The vast majority of QQQ volume — often 95%+ on a normal day — is pure secondary market trading between investors. No new shares are created. Invesco's fund assets are completely unaffected. Only the shareholder register changes.</div>
+  </div>
+
+  <!-- ② Who trades QQQ -->
+  <div class="panel" id="p1">
+    <div class="panel-header">
+      <p class="panel-title">Who trades QQQ and why</p>
+      <p class="panel-desc">QQQ's massive daily volume (~$15–20B) comes from a diverse mix of participants — each with very different holding periods and motivations.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Types of QQQ market participants and their motivations">
+
+        <!-- Header row labels -->
+        <text x="30" y="20" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963" font-weight="500">Participant</text>
+        <text x="230" y="20" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963" font-weight="500">Typical size</text>
+        <text x="370" y="20" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963" font-weight="500">Hold period</text>
+        <text x="500" y="20" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963" font-weight="500">Why they trade QQQ</text>
+        <line x1="20" y1="26" x2="740" y2="26" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <!-- Row 1 -->
+        <rect x="20" y="36" width="194" height="52" rx="7" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="117" y="58" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3d2a">Retail investor</text>
+        <text x="117" y="76" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#1a5c3a">Fidelity, Schwab users</text>
+        <text x="265" y="64" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">1–1,000 shares</text>
+        <text x="440" y="64" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Months → years</text>
+        <text x="615" y="58" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Long-term tech exposure,</text>
+        <text x="615" y="76" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">retirement savings</text>
+        <line x1="20" y1="92" x2="740" y2="92" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <!-- Row 2 -->
+        <rect x="20" y="100" width="194" height="52" rx="7" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="117" y="122" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#3d2d8a">Hedge fund</text>
+        <text x="117" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#3d2d8a">Long / short strategies</text>
+        <text x="265" y="128" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">100K–10M shares</text>
+        <text x="440" y="128" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Days → months</text>
+        <text x="615" y="122" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Market beta hedge, sector bet,</text>
+        <text x="615" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">pairs trading vs Nasdaq stocks</text>
+        <line x1="20" y1="156" x2="740" y2="156" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <!-- Row 3 -->
+        <rect x="20" y="164" width="194" height="52" rx="7" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="117" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#7a4a0a">Market maker</text>
+        <text x="117" y="204" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">Citadel, Virtu, IMC</text>
+        <text x="265" y="192" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Millions of shares</text>
+        <text x="440" y="192" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Seconds → minutes</text>
+        <text x="615" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Post bids/asks for profit</text>
+        <text x="615" y="204" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">from bid-ask spread</text>
+        <line x1="20" y1="220" x2="740" y2="220" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <!-- Row 4 -->
+        <rect x="20" y="228" width="194" height="52" rx="7" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="117" y="250" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Pension / sovereign</text>
+        <text x="117" y="268" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#8a2a15">Norway GPFG, CalPERS</text>
+        <text x="265" y="256" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Billions of dollars</text>
+        <text x="440" y="256" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Years → decades</text>
+        <text x="615" y="250" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Passive US tech allocation,</text>
+        <text x="615" y="268" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">low-cost diversification</text>
+        <line x1="20" y1="284" x2="740" y2="284" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <!-- Row 5 -->
+        <rect x="20" y="292" width="194" height="52" rx="7" fill="#e1f5ee" stroke="#085041" stroke-width="0.5"/>
+        <text x="117" y="314" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#085041">Options trader</text>
+        <text x="117" y="332" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#085041">Uses QQQ options</text>
+        <text x="265" y="320" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Varies widely</text>
+        <text x="440" y="320" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">Days → weeks</text>
+        <text x="615" y="314" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">QQQ has one of the most</text>
+        <text x="615" y="332" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a1917">liquid options markets globally</text>
+        <line x1="20" y1="348" x2="740" y2="348" stroke="#e2e0d8" stroke-width="0.5"/>
+
+        <text x="380" y="370" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">QQQ is one of the most liquid instruments on Earth — typical bid-ask spread is just $0.01 (1 cent)</text>
+      </svg>
+    </div>
+    <div class="callout">💡 QQQ's extreme liquidity (1-cent spread, $15–20B daily volume) makes it the instrument of choice for anyone wanting quick, cheap exposure to US tech. This liquidity benefits Invesco too — it makes QQQ more attractive and grows its AUM, which grows the fee income.</div>
+  </div>
+
+  <!-- ③ How QQQ price moves -->
+  <div class="panel" id="p2">
+    <div class="panel-header">
+      <p class="panel-title">How QQQ's price moves through the trading day</p>
+      <p class="panel-desc">QQQ's price is set continuously by supply and demand on Nasdaq — but it is tethered to the value of its underlying holdings by the AP arbitrage mechanism.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Forces that drive QQQ price: NAV anchor, supply demand, and AP arbitrage">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Three force boxes -->
+        <rect x="20" y="20" width="210" height="130" rx="10" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="125" y="52" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3f6b">Nasdaq-100 NAV</text>
+        <text x="125" y="74" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Real-time value of the</text>
+        <text x="125" y="92" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">101 underlying stocks</text>
+        <text x="125" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Published every 15 sec</text>
+        <text x="125" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">as IOPV (indicative NAV)</text>
+
+        <rect x="275" y="20" width="210" height="130" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="380" y="52" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">Supply &amp; demand</text>
+        <text x="380" y="74" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Buyers wanting tech</text>
+        <text x="380" y="92" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">exposure push QQQ up</text>
+        <text x="380" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Sellers push it down</text>
+        <text x="380" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Sentiment drives intraday moves</text>
+
+        <rect x="530" y="20" width="210" height="130" rx="10" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="635" y="52" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#7a4a0a">AP arbitrage</text>
+        <text x="635" y="74" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">APs create if price</text>
+        <text x="635" y="92" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">&gt; NAV (premium)</text>
+        <text x="635" y="114" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">APs redeem if price</text>
+        <text x="635" y="132" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#7a4a0a">&lt; NAV (discount)</text>
+
+        <!-- Converge to QQQ price -->
+        <line x1="125" y1="152" x2="330" y2="200" stroke="#1a3f6b" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <line x1="380" y1="152" x2="380" y2="200" stroke="#1a5c3a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <line x1="635" y1="152" x2="430" y2="200" stroke="#7a4a0a" stroke-width="1.5" marker-end="url(#arr2)"/>
+
+        <!-- QQQ price box -->
+        <rect x="230" y="202" width="300" height="62" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="1.5"/>
+        <text x="380" y="228" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="14" font-weight="600" fill="#3d2d8a">QQQ market price</text>
+        <text x="380" y="248" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Always within ~0.01% of NAV</text>
+        <text x="380" y="264" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">typically $0.01–$0.05 tracking error on a ~$480 share</text>
+
+        <rect x="100" y="286" width="560" height="26" rx="7" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="380" y="304" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">QQQ moves in lockstep with the Nasdaq-100 index — if Apple rises 2%, QQQ rises ~0.18% (Apple's weight × 2%)</text>
+      </svg>
+    </div>
+    <div class="callout">💡 QQQ's price is essentially a real-time vote on the value of 101 large tech companies. Because APs continuously arbitrage any gaps, QQQ is one of the most accurately priced instruments in global financial markets — more accurate than many individual stocks.</div>
+  </div>
+
+  <!-- ④ Where Invesco earns -->
+  <div class="panel" id="p3">
+    <div class="panel-header">
+      <p class="panel-title">Where Invesco earns — and where it does not</p>
+      <p class="panel-desc">This is the most important and often misunderstood point: Invesco earns nothing from secondary market trading. Its only revenue from QQQ is the annual management fee charged on assets.</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">QQQ AUM</div>
+        <div class="stat-value">~$290B</div>
+        <div class="stat-sub">Total assets in fund</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Annual fee</div>
+        <div class="stat-value">0.20%</div>
+        <div class="stat-sub">Expense ratio</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Annual revenue</div>
+        <div class="stat-value">~$580M</div>
+        <div class="stat-sub">0.20% × $290B</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">From trading</div>
+        <div class="stat-value">$0</div>
+        <div class="stat-sub">Zero. None. Nil.</div>
+      </div>
+    </div>
+
+    <div class="diagram-wrap">
+      <table class="rev-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;font-weight:500;font-size:11px;color:#6b6963;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;padding:0 12px 8px;border-bottom:1px solid #e2e0d8;">Revenue source</th>
+            <th style="text-align:left;font-weight:500;font-size:11px;color:#6b6963;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;padding:0 12px 8px;border-bottom:1px solid #e2e0d8;">Invesco earns?</th>
+            <th style="text-align:left;font-weight:500;font-size:11px;color:#6b6963;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.06em;padding:0 12px 8px;border-bottom:1px solid #e2e0d8;">Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Management fee (expense ratio)</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;"><span style="color:#1a5c3a;font-weight:600;">✓ YES</span></td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;">0.20% per year on total AUM, charged daily as a tiny reduction in NAV. At $290B AUM ≈ $580M/year. This is Invesco's entire QQQ revenue.</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Secondary market trading (bid/ask spread)</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;"><span style="color:#8a2a15;font-weight:600;">✗ NO</span></td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;">The spread is earned by market makers (Citadel, Virtu etc.), not Invesco. When you pay $480.01 bid and sell at $480.00 ask, that $0.01 goes to the market maker.</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Creation / redemption fees</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;"><span style="color:#1a5c3a;font-weight:600;">✓ small fee</span></td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;">Invesco charges APs a small transaction fee per creation/redemption (typically $500–$2,000 per creation unit). This covers admin costs — it is immaterial versus the management fee revenue.</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Securities lending</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;"><span style="color:#8a2a15;font-weight:600;">✗ NO (QQQ)</span></td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;">QQQ is structured as a Unit Investment Trust — it legally cannot lend its securities. Newer Invesco ETFs (e.g. QQQM) are open-end funds and do lend securities, passing income to investors.</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;font-weight:600;">Dividend income</td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;"><span style="color:#8a2a15;font-weight:600;">✗ NO</span></td>
+            <td style="padding:11px 12px;border-bottom:1px solid #e2e0d8;">Dividends received from the underlying stocks pass through to QQQ shareholders quarterly. Invesco takes no cut — the management fee is already charged on top of the gross assets.</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;font-weight:600;">Capital gains from rising stocks</td>
+            <td style="padding:11px 12px;"><span style="color:#8a2a15;font-weight:600;">✗ NO</span></td>
+            <td style="padding:11px 12px;">When Apple or Nvidia rises, the fund's NAV grows — but Invesco doesn't keep that gain. It belongs to the shareholders. Invesco's fee is a percentage of NAV, so it benefits indirectly (higher AUM = higher fee in dollar terms).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout-amber">⚠️ Common misconception: because QQQ trades $15–20B per day, people assume Invesco earns from that activity. It doesn't. Every cent of trading revenue goes to market makers, brokers, and exchanges — not to Invesco. Invesco only earns the 0.20% annual fee on the $290B it holds.</div>
+  </div>
+
+  <!-- ⑤ Who profits from trading -->
+  <div class="panel" id="p4">
+    <div class="panel-header">
+      <p class="panel-title">So who actually profits from QQQ trading activity?</p>
+      <p class="panel-desc">The $15–20B in daily QQQ trading generates significant revenue — but it flows to intermediaries, not to Invesco. Here is exactly who earns what.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Who earns from QQQ trading: exchanges, market makers, brokers and APs">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- QQQ trading activity -->
+        <rect x="270" y="16" width="220" height="54" rx="9" fill="#efedfd" stroke="#3d2d8a" stroke-width="1"/>
+        <text x="380" y="40" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#3d2d8a">QQQ trading activity</text>
+        <text x="380" y="60" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">~$15–20B per day on Nasdaq</text>
+
+        <!-- Fan to 4 earners -->
+        <path d="M310 70 L120 124" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+        <path d="M350 70 L290 124" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+        <path d="M410 70 L470 124" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+        <path d="M450 70 L640 124" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Earner 1: Nasdaq -->
+        <rect x="20" y="126" width="200" height="90" rx="9" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="120" y="158" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#1a3f6b">Nasdaq exchange</text>
+        <text x="120" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Trading fees (maker-taker)</text>
+        <text x="120" y="198" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">~$0.001–0.003 per share</text>
+        <text x="120" y="214" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Also earns from data/SIP feeds</text>
+
+        <!-- Earner 2: Market makers -->
+        <rect x="230" y="126" width="200" height="90" rx="9" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="330" y="158" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#7a4a0a">Market makers</text>
+        <text x="330" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">Bid-ask spread</text>
+        <text x="330" y="198" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">~$0.01 per share</text>
+        <text x="330" y="214" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Citadel, Virtu, IMC, Jane Street</text>
+
+        <!-- Earner 3: Brokers -->
+        <rect x="440" y="126" width="200" height="90" rx="9" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="540" y="158" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Retail brokers</text>
+        <text x="540" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">PFOF from wholesalers</text>
+        <text x="540" y="198" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">~$0.002 per share</text>
+        <text x="540" y="214" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Fidelity, Schwab, Robinhood</text>
+
+        <!-- Earner 4: APs -->
+        <rect x="650" y="126" width="100" height="90" rx="9" fill="#e1f5ee" stroke="#085041" stroke-width="0.5"/>
+        <text x="700" y="158" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#085041">APs</text>
+        <text x="700" y="178" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#085041">Arb profit on</text>
+        <text x="700" y="196" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#085041">creation /</text>
+        <text x="700" y="214" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#085041">redemption</text>
+
+        <!-- Divider -->
+        <line x1="20" y1="240" x2="740" y2="240" stroke="#e2e0d8" stroke-width="0.5" stroke-dasharray="5 4"/>
+        <text x="380" y="256" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Invesco's position — separate from all trading revenue:</text>
+
+        <!-- Invesco box at bottom -->
+        <rect x="200" y="264" width="360" height="90" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1.5"/>
+        <text x="380" y="292" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">Invesco</text>
+        <text x="380" y="314" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Earns 0.20% × $290B AUM = ~$580M/year</text>
+        <text x="380" y="334" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Accrued daily as NAV reduction — unrelated to volume</text>
+        <text x="380" y="350" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="10" fill="#6b6963">Revenue grows only if AUM grows (more investors, or rising market)</text>
+      </svg>
+    </div>
+    <div class="callout">💡 The elegant insight: Invesco's incentives are perfectly aligned with long-term investors. It earns more only when AUM grows — which happens when the market rises or when more people buy QQQ. It has no incentive to encourage short-term trading, since daily volume doesn't affect its revenue at all.</div>
+    <div class="callout-blue">📘 Note on QQQM: In 2020 Invesco launched QQQM — a cheaper version of QQQ (0.15% fee) aimed at long-term retail investors. QQQ was kept separate for institutional and trading use because its higher fee and deeper liquidity are valued by traders who don't care about 5 basis points. Both track the same Nasdaq-100 index.</div>
+  </div>
+
+  <footer>
+    <span>Invesco QQQ — secondary market &amp; revenue · Part 4 of 4</span>
+    <a href="qqq-creation.html">← Part 3: QQQ unit creation</a>
+  </footer>
+
+</div>
+<script>
+  function show(i) {
+    document.querySelectorAll('.panel').forEach((p, j) => p.classList.toggle('active', i === j));
+    document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', i === j));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
