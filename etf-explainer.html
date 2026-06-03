@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How ETF Markets Work</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f7f6f2;
+      --surface:  #ffffff;
+      --border:   #e2e0d8;
+      --text:     #1a1917;
+      --muted:    #6b6963;
+      --accent:   #1a5c3a;
+      --accent-light: #e6f2ec;
+      --blue:     #1a3f6b;
+      --blue-light: #e6eef7;
+      --amber:    #7a4a0a;
+      --amber-light: #fdf3e3;
+      --purple:   #3d2d8a;
+      --purple-light: #efedfd;
+      --coral:    #8a2a15;
+      --coral-light: #fceee9;
+      --radius:   10px;
+      --font: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    /* Tab navigation */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      padding: 7px 16px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .tab-btn:hover { background: var(--bg); color: var(--text); }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Panel */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-header {
+      margin-bottom: 1.25rem;
+    }
+
+    .panel-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .panel-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* SVG container */
+    .diagram-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1rem;
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    .diagram-wrap svg {
+      width: 100%;
+      max-width: 100%;
+      display: block;
+    }
+
+    /* Callout */
+    .callout {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #1a3d2a;
+      line-height: 1.65;
+    }
+
+    /* Clickable node hover effect */
+    .clickable-node { cursor: pointer; }
+    .clickable-node:hover rect,
+    .clickable-node:hover circle { filter: brightness(0.93); }
+
+    /* Tooltip */
+    #tooltip {
+      position: fixed;
+      background: var(--text);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 12px;
+      padding: 7px 12px;
+      border-radius: 6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      max-width: 220px;
+      line-height: 1.5;
+      z-index: 999;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    @media (max-width: 520px) {
+      .tab-btn { font-size: 12px; padding: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">Financial markets primer</p>
+    <h1>How ETF Markets Work</h1>
+    <p class="subtitle">From fund creation to secondary market trading — a visual walkthrough of the full ETF lifecycle.</p>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="show(0)">① What is an ETF?</button>
+    <button class="tab-btn" onclick="show(1)">② Creation units</button>
+    <button class="tab-btn" onclick="show(2)">③ Authorised participants</button>
+    <button class="tab-btn" onclick="show(3)">④ Secondary market</button>
+    <button class="tab-btn" onclick="show(4)">⑤ Arbitrage &amp; pricing</button>
+  </div>
+
+  <!-- ① What is an ETF -->
+  <div class="panel active" id="p0">
+    <div class="panel-header">
+      <p class="panel-title">What is an ETF?</p>
+      <p class="panel-desc">A fund that tracks an index and trades like a share on a stock exchange — combining diversification with intraday liquidity.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ETF structure: basket of stocks pooled into a fund which issues units traded on exchange">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <!-- Securities basket label -->
+        <text x="115" y="30" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Securities basket</text>
+        <rect x="20" y="40" width="190" height="216" rx="10" fill="none" stroke="#e2e0d8" stroke-width="1" stroke-dasharray="5 3"/>
+        <!-- Stocks -->
+        <rect x="36" y="56" width="158" height="38" rx="7" fill="#e6eef7" stroke="#1a3f6b" stroke-width="0.5"/>
+        <text x="115" y="79" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a3f6b">Apple (AAPL)</text>
+        <rect x="36" y="104" width="158" height="38" rx="7" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="115" y="127" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a5c3a">Microsoft (MSFT)</text>
+        <rect x="36" y="152" width="158" height="38" rx="7" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="115" y="175" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#7a4a0a">Amazon (AMZN)</text>
+        <rect x="36" y="200" width="158" height="38" rx="7" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="115" y="223" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#3d2d8a">+ 497 more…</text>
+
+        <!-- Arrow pooled -->
+        <line x1="212" y1="148" x2="272" y2="148" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="242" y="141" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">pooled</text>
+
+        <!-- Fund box -->
+        <rect x="274" y="98" width="172" height="100" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="360" y="136" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">ETF Fund</text>
+        <text x="360" y="156" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">e.g. S&amp;P 500 ETF</text>
+        <text x="360" y="174" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Fund manager runs it</text>
+
+        <!-- Arrow issues -->
+        <line x1="448" y1="148" x2="508" y2="148" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="478" y="141" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">issues</text>
+
+        <!-- ETF Units -->
+        <rect x="510" y="68" width="190" height="160" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="1"/>
+        <text x="605" y="102" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#3d2d8a">ETF Units</text>
+        <text x="605" y="124" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Each unit = a slice</text>
+        <text x="605" y="142" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">of the whole basket</text>
+        <text x="605" y="164" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">Priced continuously</text>
+        <text x="605" y="182" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">during market hours</text>
+        <text x="605" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Trades like a share</text>
+      </svg>
+    </div>
+    <div class="callout">💡 Unlike a mutual fund (priced once daily at NAV), an ETF trades throughout the day at market prices — giving investors flexibility and real-time pricing.</div>
+  </div>
+
+  <!-- ② Creation units -->
+  <div class="panel" id="p1">
+    <div class="panel-header">
+      <p class="panel-title">Creation units — how the fund manager issues ETF shares</p>
+      <p class="panel-desc">ETFs are created in large blocks called "creation units" — typically 25,000 to 200,000 shares at a time. New ETF shares only enter circulation this way.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ETF creation unit process: AP delivers basket to fund manager who issues ETF units in return">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <!-- AP box -->
+        <rect x="20" y="60" width="196" height="200" rx="10" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="118" y="92" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#8a2a15">Authorised</text>
+        <text x="118" y="110" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#8a2a15">Participant (AP)</text>
+        <text x="118" y="136" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Assembles exact basket</text>
+        <text x="118" y="154" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">of underlying stocks</text>
+        <text x="118" y="172" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">in correct proportions</text>
+        <text x="118" y="200" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Typically 50,000 ETF</text>
+        <text x="118" y="218" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">shares per creation unit</text>
+
+        <!-- Arrow: basket in -->
+        <line x1="218" y1="148" x2="286" y2="148" stroke="#8a2a15" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <text x="252" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">delivers basket</text>
+
+        <!-- Fund Manager -->
+        <rect x="288" y="80" width="184" height="136" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="380" y="116" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">Fund Manager</text>
+        <text x="380" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Verifies basket matches</text>
+        <text x="380" y="158" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">index weights exactly</text>
+        <text x="380" y="180" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Custodian holds</text>
+        <text x="380" y="198" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">the securities</text>
+
+        <!-- Arrow: units out -->
+        <line x1="474" y1="148" x2="542" y2="148" stroke="#3d2d8a" stroke-width="1.5" marker-end="url(#arr2)"/>
+        <text x="508" y="140" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">issues units</text>
+
+        <!-- Creation unit -->
+        <rect x="544" y="60" width="196" height="200" rx="10" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="642" y="98" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#3d2d8a">Creation Unit</text>
+        <text x="642" y="124" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">50,000 ETF shares</text>
+        <text x="642" y="142" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">issued to AP</text>
+        <text x="642" y="170" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">AP breaks into</text>
+        <text x="642" y="188" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">individual units</text>
+        <text x="642" y="206" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">and sells on exchange</text>
+
+        <!-- Redemption note -->
+        <rect x="20" y="282" width="720" height="30" rx="7" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="380" y="301" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Redemption is the reverse: AP returns 50,000 ETF shares → fund dissolves them → AP receives the underlying basket of stocks back</text>
+      </svg>
+    </div>
+    <div class="callout">💡 The creation/redemption process is "in-kind" — securities are exchanged for ETF shares, not cash. This keeps prices aligned to NAV and makes ETFs highly tax-efficient.</div>
+  </div>
+
+  <!-- ③ Authorised participants -->
+  <div class="panel" id="p2">
+    <div class="panel-header">
+      <p class="panel-title">Authorised participants — the key intermediaries</p>
+      <p class="panel-desc">Only ~30–40 large financial firms globally are registered APs, allowed to create and redeem units directly with the fund manager.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ecosystem showing APs between fund manager and exchange">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <!-- Fund Manager -->
+        <rect x="20" y="110" width="148" height="90" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="1"/>
+        <text x="94" y="148" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">Fund Manager</text>
+        <text x="94" y="168" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">iShares / Vanguard</text>
+        <text x="94" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">State Street / Invesco</text>
+
+        <!-- Arrows fund to APs -->
+        <line x1="170" y1="145" x2="234" y2="110" stroke="#1a5c3a" stroke-width="1" marker-end="url(#arr3)"/>
+        <line x1="170" y1="155" x2="234" y2="155" stroke="#1a5c3a" stroke-width="1" marker-end="url(#arr3)"/>
+        <line x1="170" y1="165" x2="234" y2="200" stroke="#1a5c3a" stroke-width="1" marker-end="url(#arr3)"/>
+
+        <!-- APs -->
+        <rect x="236" y="62" width="154" height="60" rx="9" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="313" y="90" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Goldman Sachs</text>
+        <text x="313" y="108" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Authorised Participant</text>
+
+        <rect x="236" y="135" width="154" height="60" rx="9" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="313" y="163" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Jane Street</text>
+        <text x="313" y="181" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Authorised Participant</text>
+
+        <rect x="236" y="208" width="154" height="60" rx="9" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="313" y="236" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="600" fill="#8a2a15">Citadel Securities</text>
+        <text x="313" y="254" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Authorised Participant</text>
+
+        <!-- Arrows APs to exchange -->
+        <line x1="392" y1="105" x2="456" y2="148" stroke="#3d2d8a" stroke-width="1" marker-end="url(#arr3)"/>
+        <line x1="392" y1="165" x2="456" y2="165" stroke="#3d2d8a" stroke-width="1" marker-end="url(#arr3)"/>
+        <line x1="392" y1="225" x2="456" y2="182" stroke="#3d2d8a" stroke-width="1" marker-end="url(#arr3)"/>
+
+        <!-- Exchange -->
+        <rect x="458" y="110" width="148" height="90" rx="10" fill="#e6eef7" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="532" y="148" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3f6b">Stock Exchange</text>
+        <text x="532" y="168" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">NYSE / LSE / ASX</text>
+        <text x="532" y="186" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Continuous trading</text>
+
+        <!-- Arrow to investors -->
+        <line x1="608" y1="155" x2="672" y2="155" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+        <!-- Investors -->
+        <rect x="674" y="110" width="72" height="90" rx="10" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="710" y="148" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Retail &amp;</text>
+        <text x="710" y="164" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">inst.</text>
+        <text x="710" y="180" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">investors</text>
+
+        <text x="380" y="295" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">APs earn profit from bid-ask spread and arbitrage — they have no obligation to create/redeem, but incentives keep them active</text>
+      </svg>
+    </div>
+    <div class="callout">💡 APs are the "plumbing" of the ETF market. Without them, ETF prices could drift far from underlying asset values. They profit from small price differences — and in doing so, keep the ETF price honest.</div>
+  </div>
+
+  <!-- ④ Secondary market -->
+  <div class="panel" id="p3">
+    <div class="panel-header">
+      <p class="panel-title">Secondary market — how ETFs trade between investors</p>
+      <p class="panel-desc">The vast majority of ETF trading never involves the fund manager — it's simply existing units changing hands on the exchange, like any other share.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ETF secondary market: buyers and sellers trade via brokers through the stock exchange">
+        <defs>
+          <marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <!-- Investor A -->
+        <rect x="20" y="90" width="136" height="80" rx="10" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="88" y="126" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a3d2a">Investor A</text>
+        <text x="88" y="144" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">Wants to buy</text>
+        <text x="88" y="160" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">100 ETF units</text>
+
+        <!-- Broker A -->
+        <rect x="176" y="105" width="118" height="50" rx="8" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="235" y="128" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a1917">Broker A</text>
+        <text x="235" y="146" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">routes order</text>
+
+        <!-- Exchange -->
+        <rect x="314" y="60" width="172" height="150" rx="12" fill="#e6eef7" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="400" y="98" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="14" font-weight="600" fill="#1a3f6b">Exchange</text>
+        <text x="400" y="120" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Order book matches</text>
+        <text x="400" y="138" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">bids and offers</text>
+        <text x="400" y="162" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">Continuous price</text>
+        <text x="400" y="180" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a3f6b">discovery</text>
+
+        <!-- Broker B -->
+        <rect x="506" y="105" width="118" height="50" rx="8" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="565" y="128" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a1917">Broker B</text>
+        <text x="565" y="146" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">routes order</text>
+
+        <!-- Investor B -->
+        <rect x="644" y="90" width="100" height="80" rx="10" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="694" y="126" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#8a2a15">Investor B</text>
+        <text x="694" y="144" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">Selling their</text>
+        <text x="694" y="160" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">ETF units</text>
+
+        <!-- Arrows -->
+        <line x1="158" y1="130" x2="174" y2="130" stroke="#1a5c3a" stroke-width="1.5" marker-end="url(#arr4)"/>
+        <line x1="296" y1="130" x2="312" y2="130" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr4)"/>
+        <line x1="488" y1="130" x2="504" y2="130" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr4)"/>
+        <line x1="642" y1="130" x2="626" y2="130" stroke="#8a2a15" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+        <!-- Market makers -->
+        <rect x="314" y="232" width="172" height="44" rx="8" fill="#fdf3e3" stroke="#7a4a0a" stroke-width="0.5"/>
+        <text x="400" y="251" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#7a4a0a">Market makers</text>
+        <text x="400" y="267" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#7a4a0a">Post bids &amp; offers, provide liquidity</text>
+        <line x1="400" y1="212" x2="400" y2="230" stroke="#7a4a0a" stroke-width="1" stroke-dasharray="3 3"/>
+      </svg>
+    </div>
+    <div class="callout">💡 Because ETFs trade like shares, you can buy or sell at any time the exchange is open — including limit orders, stop-losses, and short selling. Mutual funds only let you transact at the end-of-day NAV.</div>
+  </div>
+
+  <!-- ⑤ Arbitrage -->
+  <div class="panel" id="p4">
+    <div class="panel-header">
+      <p class="panel-title">Arbitrage — what keeps the ETF price honest</p>
+      <p class="panel-desc">If the ETF's market price drifts from its underlying NAV, APs step in to profit — and in doing so, instantly correct the gap.</p>
+    </div>
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ETF arbitrage: premium and discount correction by authorised participants">
+        <defs>
+          <marker id="arr5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6b6963" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- PREMIUM -->
+        <text x="10" y="30" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a1917">ETF at PREMIUM — market price above NAV</text>
+
+        <rect x="10" y="44" width="164" height="70" rx="8" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="92" y="76" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a3d2a">AP buys stocks</text>
+        <text x="92" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">at lower NAV price</text>
+
+        <line x1="176" y1="79" x2="210" y2="79" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="212" y="44" width="164" height="70" rx="8" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="294" y="76" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#3d2d8a">Creates ETF units</text>
+        <text x="294" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">delivers to fund manager</text>
+
+        <line x1="378" y1="79" x2="412" y2="79" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="414" y="44" width="164" height="70" rx="8" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="496" y="76" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#8a2a15">Sells ETF on market</text>
+        <text x="496" y="94" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">at higher price → profit</text>
+
+        <line x1="580" y1="79" x2="614" y2="79" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="616" y="44" width="132" height="70" rx="8" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="682" y="70" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">↑ ETF supply</text>
+        <text x="682" y="86" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">→ price falls</text>
+        <text x="682" y="102" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">back to NAV</text>
+
+        <!-- Divider -->
+        <line x1="10" y1="138" x2="748" y2="138" stroke="#e2e0d8" stroke-width="0.5" stroke-dasharray="5 4"/>
+
+        <!-- DISCOUNT -->
+        <text x="10" y="164" font-family="'DM Sans',sans-serif" font-size="13" font-weight="600" fill="#1a1917">ETF at DISCOUNT — market price below NAV</text>
+
+        <rect x="10" y="178" width="164" height="70" rx="8" fill="#fceee9" stroke="#8a2a15" stroke-width="0.5"/>
+        <text x="92" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#8a2a15">AP buys ETF</text>
+        <text x="92" y="228" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#8a2a15">cheaply on exchange</text>
+
+        <line x1="176" y1="213" x2="210" y2="213" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="212" y="178" width="164" height="70" rx="8" fill="#efedfd" stroke="#3d2d8a" stroke-width="0.5"/>
+        <text x="294" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#3d2d8a">Redeems with</text>
+        <text x="294" y="228" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#3d2d8a">fund manager</text>
+
+        <line x1="378" y1="213" x2="412" y2="213" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="414" y="178" width="164" height="70" rx="8" fill="#e6f2ec" stroke="#1a5c3a" stroke-width="0.5"/>
+        <text x="496" y="210" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="12" font-weight="500" fill="#1a3d2a">Sells underlying stocks</text>
+        <text x="496" y="228" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#1a5c3a">at NAV → profit</text>
+
+        <line x1="580" y1="213" x2="614" y2="213" stroke="#6b6963" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+        <rect x="616" y="178" width="132" height="70" rx="8" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="682" y="204" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">↓ ETF supply</text>
+        <text x="682" y="220" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">→ price rises</text>
+        <text x="682" y="236" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">back to NAV</text>
+
+        <rect x="10" y="270" width="738" height="46" rx="8" fill="#f7f6f2" stroke="#e2e0d8" stroke-width="0.5"/>
+        <text x="379" y="290" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">Result: ETF market price stays within a very tight band around NAV — typically &lt;0.1% for liquid ETFs</text>
+        <text x="379" y="308" text-anchor="middle" font-family="'DM Sans',sans-serif" font-size="11" fill="#6b6963">APs act in pure self-interest (profit), yet the market outcome is a tightly priced, efficient product for all investors</text>
+      </svg>
+    </div>
+    <div class="callout">💡 This self-correcting mechanism is elegant — it's why ETFs have displaced many actively managed mutual funds over the past two decades. Efficiency is built into the structure.</div>
+  </div>
+
+  <footer>
+    <p>ETF market explainer · Diagrams built with SVG · Click any tab above to explore</p>
+  </footer>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+  function show(i) {
+    document.querySelectorAll('.panel').forEach((p, j) => p.classList.toggle('active', i === j));
+    document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', i === j));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
